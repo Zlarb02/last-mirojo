@@ -38,11 +38,11 @@ export function ChatInterface() {
   };
 
   return (
-    <Card className="h-[600px] flex flex-col">
-      <CardHeader>
+    <Card className="min-h-[300px] max-h-[600px] h-full flex flex-col">
+      <CardHeader className="flex-none">
         <CardTitle>{t("game.adventure")}</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col min-h-0">
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
             {messages.map((message, i) => (
@@ -73,7 +73,7 @@ export function ChatInterface() {
             )}
           </div>
         </ScrollArea>
-        <form onSubmit={handleSubmit} className="mt-4 flex gap-2">
+        <form onSubmit={handleSubmit} className="flex-none mt-4 flex gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
