@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, Send } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   role: "user" | "assistant";
@@ -13,6 +15,7 @@ interface Message {
 
 export function ChatInterface() {
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -27,11 +30,20 @@ export function ChatInterface() {
     setIsLoading(true);
 
     try {
-      // TODO: Implement Groq API integration
-      const response = { role: "assistant" as const, content: "AI response placeholder" };
-      setMessages(prev => [...prev, response]);
+      const res = await apiRequest("POST", "/api/chat", {
+        message: input,
+        context: messages.map(m => `${m.role}: ${m.content}`).join('\n')
+      });
+      const data = await res.json();
+      const assistantMessage = { role: "assistant" as const, content: data.response };
+      setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Failed to get AI response:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'obtenir une réponse de l'IA",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
