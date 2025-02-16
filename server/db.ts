@@ -5,18 +5,12 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-if (!process.env.SUPABASE_URL) {
-  throw new Error("SUPABASE_URL must be set for Supabase connection");
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?",
+  );
 }
 
-// Convert Supabase URL to PostgreSQL connection string
-const supabaseUrl = new URL(process.env.SUPABASE_URL);
-const dbHost = supabaseUrl.hostname;
-const dbPort = supabaseUrl.port || "5432";
-const dbName = supabaseUrl.pathname.split("/")[1];
-
-const connectionString = `postgresql://${process.env.PGUSER}:${process.env.PGPASSWORD}@${dbHost}:${dbPort}/${dbName}`;
-
-export const pool = new Pool({ connectionString });
+export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle(pool, { schema });
 export const { users, gameStates } = schema;
