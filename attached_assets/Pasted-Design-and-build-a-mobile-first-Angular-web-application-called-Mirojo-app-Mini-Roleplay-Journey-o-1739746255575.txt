@@ -1,0 +1,45 @@
+Design and build a mobile-first Angular web application called "Mirojo.app Mini Roleplay Journey", offering a futuristic and immersive role-playing experience inspired by AI-dungeon games. The app will feature a chatbot as its core AI engine, leveraging the @n8n/chat package for initial AI backend integration. The focus will be on delivering a creative, engaging, and eco-conscious experience.
+Core Functionalities
+Frontend Features
+
+    Futuristic, Clean UI/UX Design:
+        Prioritize simplicity and ease of use, ensuring a sleek and modern feel.
+        Include a single input bar for user prompts to interact with the AI chatbot.
+        Display conversation messages with optional text-to-speech playback for immersive storytelling.
+
+    Interactive Gameplay Elements:
+        Placeholder sections for future enhancements:
+            Character Attributes: Display stats such as HP, inventory, and skills.
+            History Tracking: Track event logs, visited locations, and user decisions.
+        Dynamic Ambiance Features:
+            Implement AI-generated background music to enhance atmosphere.
+            Enable AI-driven character voiceovers for key moments or events.
+
+Event Visuals
+
+    Create a system to fetch contextually relevant, rare images (non-AI-generated, low-cost or free assets) based on specific in-game events to boost user engagement and immersion.
+
+Customization Options
+
+    Multi-Theme Support:
+        Offer multiple futuristic design themes, including one inspired by PrimeNG's Sakai Angular template.
+    Multilingual Support:
+        Provide English and French language options for a broader user base.
+
+Eco-Friendly Design Goals
+
+    Sustainable Development Practices:
+        Use eco-conscious tools and services like Bolt.New, Lovable.Dev, and Replit to minimize the app's environmental footprint.
+        Optimize resource usage with lightweight frameworks and libraries wherever possible.
+
+Additional Notes
+
+    Modern, Modular Tech Stack:
+        Ensure the codebase is scalable and modular, enabling easy integration of additional AI models and features in the future.
+
+    Comprehensive Documentation:
+        Provide detailed developer documentation to support seamless implementation of new features or updates.
+
+Outcome
+
+The completed application should deliver a captivating, low-impact, futuristic role-playing experience, blending creativity with eco-conscious development. The interface should be modern and intuitive, while fostering long-term scalability for future enhancements.
