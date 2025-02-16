@@ -1,8 +1,11 @@
 import { User, InsertUser, GameState } from "@shared/schema";
+import { db, users, gameStates } from "./db";
+import { eq } from "drizzle-orm";
 import session from "express-session";
-import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { pool } from "./db";
 
-const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -13,46 +16,70 @@ export interface IStorage {
   sessionStore: session.Store;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private gameStates: Map<number, GameState>;
+export class DatabaseStorage implements IStorage {
   public sessionStore: session.Store;
-  currentId: number;
 
   constructor() {
-    this.users = new Map();
-    this.gameStates = new Map();
-    this.currentId = 1;
-    this.sessionStore = new MemoryStore({
-      checkPeriod: 86400000,
+    this.sessionStore = new PostgresSessionStore({ 
+      pool, 
+      createTableIfMissing: true 
     });
   }
 
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentId++;
-    const user: User = { ...insertUser, id, currentGameState: null };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values({
+        ...insertUser,
+        currentGameState: null,
+        language: insertUser.language || 'en'
+      })
+      .returning();
     return user;
   }
 
   async updateGameState(userId: number, gameState: Partial<GameState>): Promise<void> {
-    const existing = this.gameStates.get(userId) || {};
-    this.gameStates.set(userId, { ...existing, ...gameState, userId });
+    const [existing] = await db
+      .select()
+      .from(gameStates)
+      .where(eq(gameStates.userId, userId));
+
+    if (existing) {
+      await db
+        .update(gameStates)
+        .set({
+          ...gameState,
+          savedAt: new Date().toISOString()
+        })
+        .where(eq(gameStates.userId, userId));
+    } else {
+      await db
+        .insert(gameStates)
+        .values({
+          userId,
+          ...gameState,
+          savedAt: new Date().toISOString()
+        });
+    }
   }
 
   async getGameState(userId: number): Promise<GameState | undefined> {
-    return this.gameStates.get(userId);
+    const [gameState] = await db
+      .select()
+      .from(gameStates)
+      .where(eq(gameStates.userId, userId));
+    return gameState;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
