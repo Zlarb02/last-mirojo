@@ -15,6 +15,7 @@ export default {
       logout: "Logout",
     },
     game: {
+      adventure: "Adventure",
       stats: {
         title: "Character Stats",
         health: "Health",
@@ -30,6 +31,14 @@ export default {
         thinking: "AI is thinking...",
         send: "Send",
       },
+    },
+    navigation: {
+      home: "Home",
+      newGame: "New Game",
+      mySaves: "My Games",
+      settings: "Settings",
+      toggleFullscreen: "Toggle Fullscreen",
+      toggleMenu: "Toggle Menu",
     },
     settings: {
       language: "Language",

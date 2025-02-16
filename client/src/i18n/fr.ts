@@ -15,6 +15,7 @@ export default {
       logout: "Déconnexion",
     },
     game: {
+      adventure: "Aventure",
       stats: {
         title: "Statistiques du Personnage",
         health: "Santé",
@@ -30,6 +31,14 @@ export default {
         thinking: "L'IA réfléchit...",
         send: "Envoyer",
       },
+    },
+    navigation: {
+      home: "Accueil",
+      newGame: "Nouvelle Partie",
+      mySaves: "Mes Parties",
+      settings: "Réglages",
+      toggleFullscreen: "Plein Écran",
+      toggleMenu: "Menu",
     },
     settings: {
       language: "Langue",

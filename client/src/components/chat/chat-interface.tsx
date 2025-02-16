@@ -40,7 +40,7 @@ export function ChatInterface() {
   return (
     <Card className="h-[600px] flex flex-col">
       <CardHeader>
-        <CardTitle>Adventure</CardTitle>
+        <CardTitle>{t("game.adventure")}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col">
         <ScrollArea className="flex-1 pr-4">
