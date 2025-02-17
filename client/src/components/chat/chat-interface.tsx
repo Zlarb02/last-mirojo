@@ -25,18 +25,21 @@ export function ChatInterface() {
     if (!input.trim() || isLoading) return;
 
     const userMessage = { role: "user" as const, content: input };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
 
     try {
       const res = await apiRequest("POST", "/api/chat", {
         message: input,
-        context: messages.map(m => `${m.role}: ${m.content}`).join('\n')
+        context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
       });
       const data = await res.json();
-      const assistantMessage = { role: "assistant" as const, content: data.response };
-      setMessages(prev => [...prev, assistantMessage]);
+      const assistantMessage = {
+        role: "assistant" as const,
+        content: data.response,
+      };
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Failed to get AI response:", error);
       toast({

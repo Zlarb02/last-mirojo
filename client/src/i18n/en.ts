@@ -33,6 +33,8 @@ export default {
       },
     },
     navigation: {
+      menu: "Menu",
+      menuDescription: "Main application navigation",
       home: "Home",
       newGame: "New Game",
       mySaves: "My Games",

@@ -2,7 +2,8 @@ export default {
   translation: {
     app: {
       title: "Mirojo.app Mini Voyage de Jeu de Rôle",
-      description: "Embarquez dans une aventure futuriste de jeu de rôle propulsée par l'IA",
+      description:
+        "Embarquez dans une aventure futuriste de jeu de rôle propulsée par l'IA",
     },
     auth: {
       welcome: "Bienvenue sur Mirojo",
@@ -33,6 +34,8 @@ export default {
       },
     },
     navigation: {
+      menu: "Menu",
+      menuDescription: "Navigation principale de l'application",
       home: "Accueil",
       newGame: "Nouvelle Partie",
       mySaves: "Mes Parties",

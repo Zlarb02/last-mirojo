@@ -18,11 +18,21 @@ export function LanguageSwitcher() {
           <Languages className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => i18n.changeLanguage("en")}>
+      <DropdownMenuContent align="end" className="bg-gray-100">
+        <DropdownMenuItem
+          onClick={() => i18n.changeLanguage("en")}
+          className={`hover:bg-gray-400 transition-colors duration-200 ${
+            i18n.language === "en" ? "force-hover" : ""
+          }`}
+        >
           {t("settings.english")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => i18n.changeLanguage("fr")}>
+        <DropdownMenuItem
+          onClick={() => i18n.changeLanguage("fr")}
+          className={`hover:bg-gray-400 transition-colors duration-200 ${
+            i18n.language === "fr" ? "force-hover" : ""
+          }`}
+        >
           {t("settings.french")}
         </DropdownMenuItem>
       </DropdownMenuContent>
