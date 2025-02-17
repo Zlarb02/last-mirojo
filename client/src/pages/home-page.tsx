@@ -5,7 +5,6 @@ import { ChatInterface } from "@/components/chat/chat-interface";
 import { CharacterStats } from "@/components/game/character-stats";
 import { EventLog } from "@/components/game/event-log";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
-import { SideMenu } from "@/components/layout/side-menu";
 
 export default function HomePage() {
   const { logoutMutation } = useAuth();
@@ -13,8 +12,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      <SideMenu />
-
       <div className="flex-1 flex flex-col">
         <header className="border-b">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">

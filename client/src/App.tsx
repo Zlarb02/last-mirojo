@@ -9,6 +9,7 @@ import MyGamesPage from "@/pages/my-games-page";
 import SettingsPage from "@/pages/settings-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
+import Layout from "@/components/layout";
 import "./i18n/config";
 
 function Router() {
@@ -27,7 +28,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router />
+        <Layout>
+          <Router />
+        </Layout>
         <Toaster />
       </AuthProvider>
     </QueryClientProvider>
