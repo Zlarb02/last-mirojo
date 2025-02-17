@@ -10,14 +10,17 @@ import {
   Save, 
   Settings, 
   Maximize, 
-  Minimize 
+  Minimize,
+  LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 export function SideMenu() {
   const { t } = useTranslation();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [location] = useLocation();
+  const { logout } = useAuth();
 
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
@@ -69,6 +72,20 @@ export function SideMenu() {
               </Link>
             ))}
           </nav>
+          <div className="mt-4 flex justify-between">
+            <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+              {isFullscreen ? (
+                <Minimize className="h-5 w-5" />
+              ) : (
+                <Maximize className="h-5 w-5" />
+              )}
+              <span className="sr-only">{t("navigation.toggleFullscreen")}</span>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={logout}>
+              <LogOut className="h-5 w-5" />
+              <span className="sr-only">{t("auth.logout")}</span>
+            </Button>
+          </div>
         </SheetContent>
       </Sheet>
 
@@ -89,21 +106,21 @@ export function SideMenu() {
             </Link>
           ))}
         </div>
+        <div className="mt-4 flex justify-between">
+          <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
+            {isFullscreen ? (
+              <Minimize className="h-5 w-5" />
+            ) : (
+              <Maximize className="h-5 w-5" />
+            )}
+            <span className="sr-only">{t("navigation.toggleFullscreen")}</span>
+          </Button>
+          <Button variant="ghost" size="icon" onClick={logout}>
+            <LogOut className="h-5 w-5" />
+            <span className="sr-only">{t("auth.logout")}</span>
+          </Button>
+        </div>
       </nav>
-
-      <Button
-        variant="ghost"
-        size="icon"
-        className="fixed bottom-4 right-4 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm hover:shadow-md transition-shadow"
-        onClick={toggleFullscreen}
-      >
-        {isFullscreen ? (
-          <Minimize className="h-5 w-5" />
-        ) : (
-          <Maximize className="h-5 w-5" />
-        )}
-        <span className="sr-only">{t("navigation.toggleFullscreen")}</span>
-      </Button>
     </>
   );
 }
