@@ -1,0 +1,56 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useTranslation } from "react-i18next";
+
+export default function SettingsPage() {
+  const { t, i18n } = useTranslation();
+  
+  return (
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-6">{t('settings.title', 'Réglages')}</h1>
+      <div className="space-y-4 max-w-2xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.language', 'Langue')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Select 
+              defaultValue={i18n.language} 
+              onValueChange={(value) => i18n.changeLanguage(value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('settings.selectLanguage', 'Sélectionner une langue')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fr">Français</SelectItem>
+                <SelectItem value="en">English</SelectItem>
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.notifications', 'Notifications')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="game-notifications">
+                {t('settings.gameNotifications', 'Notifications de jeu')}
+              </Label>
+              <Switch id="game-notifications" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="sound-effects">
+                {t('settings.soundEffects', 'Effets sonores')}
+              </Label>
+              <Switch id="sound-effects" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
