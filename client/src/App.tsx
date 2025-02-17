@@ -9,6 +9,7 @@ import MyGamesPage from "@/pages/my-games-page";
 import SettingsPage from "@/pages/settings-page";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
+import { ThemeProvider } from "next-themes";
 import "./i18n/config";
 
 function Router() {
@@ -26,10 +27,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router />
-        <Toaster />
-      </AuthProvider>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <AuthProvider>
+          <Router />
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

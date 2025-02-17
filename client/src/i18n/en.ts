@@ -47,5 +47,8 @@ export default {
       english: "English",
       french: "French",
     },
+    common: {
+      toggleTheme: "Toggle theme",
+    },
   },
 };

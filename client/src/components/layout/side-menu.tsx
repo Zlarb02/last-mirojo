@@ -51,7 +51,7 @@ export function SideMenu() {
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden fixed left-4 top-4 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm hover:shadow-md transition-shadow"
+            className="fixed left-4 top-4 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm hover:shadow-md transition-shadow"
           >
             <PanelLeft className="h-5 w-5" />
             <span className="sr-only">{t("navigation.toggleMenu")}</span>
@@ -60,7 +60,7 @@ export function SideMenu() {
         <SheetPortal>
           <SheetContent
             side="left"
-            className="w-72 p-6 border-r shadow-lg bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+            className="w-72 p-6 border-r shadow-xl bg-white dark:bg-gray-950"
           >
             <SheetTitle className="text-lg font-semibold mb-4">
               {t("navigation.menu")}

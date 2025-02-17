@@ -18,10 +18,13 @@ export function LanguageSwitcher() {
           <Languages className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-gray-100">
+      <DropdownMenuContent
+        align="end"
+        className="bg-background drop-shadow-md backdrop-blur"
+      >
         <DropdownMenuItem
           onClick={() => i18n.changeLanguage("en")}
-          className={`hover:bg-gray-400 transition-colors duration-200 ${
+          className={`transition-colors duration-200 ${
             i18n.language === "en" ? "force-hover" : ""
           }`}
         >
@@ -29,7 +32,7 @@ export function LanguageSwitcher() {
         </DropdownMenuItem>
         <DropdownMenuItem
           onClick={() => i18n.changeLanguage("fr")}
-          className={`hover:bg-gray-400 transition-colors duration-200 ${
+          className={`transition-colors duration-200 ${
             i18n.language === "fr" ? "force-hover" : ""
           }`}
         >

@@ -48,5 +48,8 @@ export default {
       english: "Anglais",
       french: "Français",
     },
+    common: {
+      toggleTheme: "Changer le thème",
+    },
   },
 };
