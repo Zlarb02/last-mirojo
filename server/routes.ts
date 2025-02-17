@@ -14,7 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const userId = req.user!.id;
     await storage.updateGameState(userId, {
       ...req.body,
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
     });
     res.sendStatus(200);
   });
@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await generateResponse(message, context);
       res.json({ response });
     } catch (error) {
-      console.error('Chat error:', error);
+      console.error("Chat error:", error);
       res.status(500).json({ error: "Failed to generate response" });
     }
   });
