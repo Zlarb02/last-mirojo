@@ -3,7 +3,6 @@ import { db, users, gameStates } from "./db";
 import { eq } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "./db";
 
 const PostgresSessionStore = connectPg(session);
 
@@ -20,9 +19,9 @@ export class DatabaseStorage implements IStorage {
   public sessionStore: session.Store;
 
   constructor() {
-    this.sessionStore = new PostgresSessionStore({ 
-      pool, 
-      createTableIfMissing: true 
+    this.sessionStore = new PostgresSessionStore({
+      conString: process.env.DATABASE_URL, // 🔥 Remplace `pool` par `conString`
+      createTableIfMissing: true,
     });
   }
 
@@ -32,7 +31,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
     return user;
   }
 
@@ -42,13 +44,16 @@ export class DatabaseStorage implements IStorage {
       .values({
         ...insertUser,
         currentGameState: null,
-        language: insertUser.language || 'en'
+        language: insertUser.language || "en",
       })
       .returning();
     return user;
   }
 
-  async updateGameState(userId: number, gameState: Partial<GameState>): Promise<void> {
+  async updateGameState(
+    userId: number,
+    gameState: Partial<GameState>,
+  ): Promise<void> {
     const [existing] = await db
       .select()
       .from(gameStates)
@@ -59,17 +64,17 @@ export class DatabaseStorage implements IStorage {
         .update(gameStates)
         .set({
           ...gameState,
-          savedAt: new Date().toISOString()
+          savedAt: new Date().toISOString(),
         })
         .where(eq(gameStates.userId, userId));
     } else {
-      await db
-        .insert(gameStates)
-        .values({
-          userId,
-          ...gameState,
-          savedAt: new Date().toISOString()
-        });
+      await db.insert(gameStates).values({
+        userId,
+        stats: gameState.stats || {},
+        inventory: gameState.inventory || {},
+        eventLog: gameState.eventLog || {},
+        savedAt: new Date().toISOString(),
+      });
     }
   }
 
