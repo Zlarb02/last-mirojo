@@ -9,9 +9,13 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { SideMenu } from "@/components/layout/side-menu";
 import { Header } from "@/components/layout/header";
+import { useGames } from '@/hooks/use-games';
+import { Loader2 } from 'lucide-react';
+import { navigate } from "wouter/use-browser-location";
 
 export default function MyGamesPage() {
   const { t } = useTranslation();
+  const { games, isLoading, error } = useGames();
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -23,23 +27,44 @@ export default function MyGamesPage() {
           <h1 className="text-2xl font-bold mb-6">
             {t("myGames.title", "Mes parties")}
           </h1>
+
+          {isLoading && (
+            <div className="flex justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          )}
+
+          {error && (
+            <div className="text-red-500 text-center">
+              {t("myGames.error", "Erreur lors du chargement des parties")}
+            </div>
+          )}
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {t("myGames.currentGame", "Partie en cours")}
-                </CardTitle>
-                <CardDescription>
-                  {t("myGames.lastPlayed", "Dernière partie le")}{" "}
-                  {new Date().toLocaleDateString()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full">
-                  {t("myGames.continue", "Continuer")}
-                </Button>
-              </CardContent>
-            </Card>
+            {games.map((game) => (
+              <Card key={game.id}>
+                <CardHeader>
+                  <CardTitle>
+                    {t("myGames.savedGame", "Partie sauvegardée")}
+                  </CardTitle>
+                  <CardDescription>
+                    {t("myGames.lastPlayed", "Dernière partie le")}{" "}
+                    {new Date(game.saved_at).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-4 text-sm text-muted-foreground line-clamp-2">
+                    {game.conversation.messages[game.conversation.messages.length - 1]?.content || t("myGames.noMessages")}
+                  </p>
+                  <Button 
+                    className="w-full"
+                    onClick={() => navigate('/')}
+                  >
+                    {t("myGames.continue", "Continuer")}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
 
             <Card>
               <CardHeader>
@@ -49,7 +74,11 @@ export default function MyGamesPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate('/new-game')}
+                >
                   {t("myGames.create", "Créer")}
                 </Button>
               </CardContent>

@@ -31,6 +31,10 @@ export default {
         placeholder: "Tapez votre action...",
         thinking: "L'IA réfléchit...",
         send: "Envoyer",
+        save: "Sauvegarder la conversation",
+        failed: "Échec de la réponse IA",
+        saved: "Conversation sauvegardée avec succès",
+        saveFailed: "Échec de la sauvegarde de la conversation"
       },
     },
     navigation: {
@@ -51,5 +55,10 @@ export default {
     common: {
       toggleTheme: "Changer le thème",
     },
+    myGames: {
+      error: "Erreur lors du chargement des parties",
+      savedGame: "Partie sauvegardée",
+      noMessages: "Aucun message",
+    }
   },
 };

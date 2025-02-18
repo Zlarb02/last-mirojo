@@ -29,7 +29,11 @@ export default {
       chat: {
         placeholder: "Type your action...",
         thinking: "AI is thinking...",
-        send: "Send",
+        send: "Send message",
+        save: "Save conversation",
+        failed: "Failed to get AI response",
+        saved: "Conversation saved successfully",
+        saveFailed: "Failed to save conversation"
       },
     },
     navigation: {
@@ -50,5 +54,10 @@ export default {
     common: {
       toggleTheme: "Toggle theme",
     },
+    myGames: {
+      error: "Failed to load games",
+      savedGame: "Saved game",
+      noMessages: "No messages",
+    }
   },
 };

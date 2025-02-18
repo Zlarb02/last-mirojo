@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -24,6 +24,23 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   language: true,
 });
+
+export const chatHistories = pgTable("chat_histories", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").references(() => users.id, { 
+    onDelete: "cascade", 
+    onUpdate: "cascade" 
+  }),
+  game_state_id: integer("game_state_id").references(() => gameStates.id, { 
+    onDelete: "cascade" 
+  }),
+  conversation: jsonb("conversation").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export type ChatHistory = typeof chatHistories.$inferSelect;
+export type NewChatHistory = typeof chatHistories.$inferInsert;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
