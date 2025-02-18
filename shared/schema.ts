@@ -25,7 +25,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   language: true,
 });
 
-export const chatHistories = pgTable("chat_histories", {
+export const games = pgTable("games", {
   id: serial("id").primaryKey(),
   user_id: integer("user_id").references(() => users.id, { 
     onDelete: "cascade", 
@@ -39,8 +39,8 @@ export const chatHistories = pgTable("chat_histories", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
-export type ChatHistory = typeof chatHistories.$inferSelect;
-export type NewChatHistory = typeof chatHistories.$inferInsert;
+export type Game = typeof games.$inferSelect;
+export type NewGame = typeof games.$inferInsert;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

@@ -14,20 +14,35 @@ app.post("/api/chat/save", async (req, res) => {
 
   try {
     const userId = req.user!.id;
-    const { conversation } = req.body;
-    const gameState = await storage.getGameState(userId);
-    
-    // Get the latest game state for the user
-    if (!gameState) return res.status(404).json({ error: "No game state found" });
+    const { conversationId, conversation } = req.body;
 
-    // Save conversation to chat_histories table
-    await storage.saveChatHistory({
+    if (conversationId) {
+      // Vérifier que la conversation appartient à l'utilisateur
+      const existingGame = await storage.getGameById(conversationId);
+      if (!existingGame || existingGame.user_id !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+
+      // Mettre à jour la conversation existante
+      const updatedGame = await storage.updateGame(conversationId, {
+        conversation
+      });
+      return res.json(updatedGame);
+    }
+
+    // Si pas de conversationId, créer une nouvelle conversation
+    const gameState = await storage.getGameState(userId);
+    if (!gameState) {
+      return res.status(404).json({ error: "No game state found" });
+    }
+
+    const newGame = await storage.saveGame({
       user_id: userId,
       game_state_id: gameState.id,
       conversation: conversation,
     });
 
-    res.sendStatus(200);
+    res.json(newGame);
   } catch (error) {
     console.error("Failed to save chat history:", error);
     res.status(500).json({ error: "Failed to save conversation" });
@@ -78,6 +93,41 @@ app.post("/api/chat/save", async (req, res) => {
     } catch (error) {
       console.error("Failed to fetch games:", error);
       res.status(500).json({ error: "Failed to fetch games" });
+    }
+  });
+
+  app.get("/api/games/last", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+  
+    try {
+      const userId = req.user!.id;
+      const conversation = await storage.getLastConversation(userId);
+      res.json({ conversation });
+    } catch (error) {
+      console.error("Failed to fetch last conversation:", error);
+      res.status(500).json({ error: "Failed to fetch last conversation" });
+    }
+  });
+
+   app.delete("/api/games/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+  
+    try {
+      const userId = req.user!.id;
+      const gameId = parseInt(req.params.id);
+  
+      // Check if game exists and belongs to user
+      const game = await storage.getGameById(gameId);
+      if (!game || game.user_id !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+  
+      await storage.deleteGame(gameId);
+      // Send 204 No Content for successful deletion
+      res.sendStatus(204);
+    } catch (error) {
+      console.error("Failed to delete game:", error);
+      res.status(500).json({ error: "Failed to delete game" });
     }
   });
 

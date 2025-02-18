@@ -4,20 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Save } from "lucide-react";
+import { Save, Send, Loader2, PowerIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-
-interface Message {
-  role: "user" | "assistant";
-  content: string;
-  timestamp?: string;
-}
-
-interface SavedConversation {
-  messages: Message[];
-  timestamp: string;
-}
+import { Message, SavedConversation } from "@/types/chat";
 
 interface ChatInterfaceProps {
   initialConversation?: SavedConversation;
@@ -32,6 +22,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
   );
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [autoSave, setAutoSave] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -56,9 +47,14 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     setIsLoading(true);
 
     try {
+      // Envoyer tous les messages comme contexte
       const res = await apiRequest("POST", "/api/chat", {
         message: input,
-        context: messages.map((m) => `${m.role}: ${m.content}`).join("\n"),
+        context: messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          timestamp: m.timestamp
+        })),
       });
 
       if (!res.ok) throw new Error('Failed to get AI response');
@@ -70,10 +66,13 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         timestamp: new Date().toISOString(),
       };
       
+      const updatedMessages = [...messages, userMessage, assistantMessage];
       setMessages((prev) => [...prev, assistantMessage]);
       
-      // Auto-save after each assistant response
-      await handleSaveConversation([...messages, userMessage, assistantMessage]);
+      // Only auto-save if enabled
+      if (autoSave) {
+        await handleSaveConversation(updatedMessages);
+      }
       
     } catch (error) {
       console.error("Failed to get AI response:", error);
@@ -92,6 +91,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
 
     try {
       const res = await apiRequest("POST", "/api/chat/save", {
+        conversationId: initialConversation?.id, // Ajouter l'ID pour mise à jour
         conversation: {
           messages: messagesToSave,
           timestamp: new Date().toISOString(),
@@ -120,9 +120,18 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
 
   return (
     <Card className="min-h-[300px] max-h-[600px] h-full flex flex-col">
-      <CardHeader className="flex flex-row justify-between items-center">
+           <CardHeader className="flex flex-row justify-between items-center">
         <CardTitle>{t("game.adventure")}</CardTitle>
-        <div className="relative z-10">
+        <div className="flex gap-2 relative z-10">
+          <Button
+            onClick={() => setAutoSave(!autoSave)}
+            type="button"
+            variant={autoSave ? "default" : "outline"}
+            className="relative active:scale-95 transition-all"
+            title={autoSave ? t("game.chat.autoSaveOn") : t("game.chat.autoSaveOff")}
+          >
+            <PowerIcon className={`h-4 w-4 ${autoSave ? "text-green-500" : "text-gray-500"}`} />
+          </Button>
           <Button
             onClick={() => handleSaveConversation()}
             type="button"

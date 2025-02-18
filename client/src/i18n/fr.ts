@@ -52,13 +52,27 @@ export default {
       english: "Anglais",
       french: "Français",
     },
-    common: {
-      toggleTheme: "Changer le thème",
-    },
     myGames: {
-      error: "Erreur lors du chargement des parties",
-      savedGame: "Partie sauvegardée",
-      noMessages: "Aucun message",
+      error: "Failed to load games",
+      savedGame: "Saved game",
+      noMessages: "No messages",
+      title: "My Games",
+      lastPlayed: "Last played on",
+      continue: "Continue",
+      newGame: "New Game",
+      startNew: "Start a new adventure",
+      create: "Create",
+      deleteTitle: "Delete game",
+      deleteDescription: "Are you sure you want to delete this game? This action cannot be undone.",
+      deleted: "Game deleted successfully",
+      deleteFailed: "Failed to delete game"
+    },
+    common: {
+      toggleTheme: "Toggle theme",
+      cancel: "Cancel",
+      delete: "Delete",
+      success: "Success",
+      error: "Error"
     }
   },
 };

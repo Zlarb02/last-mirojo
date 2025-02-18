@@ -36,10 +36,10 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: chat_histories; Type: TABLE; Schema: public; Owner: -
+-- Name: games; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE public.chat_histories (
+CREATE TABLE public.games (
     id bigint NOT NULL,
     game_state_id bigint NOT NULL,
     conversation jsonb NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE public.chat_histories (
 -- Name: chat_histories_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
-ALTER TABLE public.chat_histories ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+ALTER TABLE public.games ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
     SEQUENCE NAME public.chat_histories_id_seq
     START WITH 1
     INCREMENT BY 1
@@ -156,10 +156,10 @@ ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_
 
 
 --
--- Name: chat_histories chat_histories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: games chat_histories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.chat_histories
+ALTER TABLE ONLY public.games
     ADD CONSTRAINT chat_histories_pkey PRIMARY KEY (id);
 
 
@@ -206,22 +206,22 @@ CREATE INDEX "IDX_session_expire" ON public.session USING btree (expire);
 -- Name: idx_chat_histories_game_state_id; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX idx_chat_histories_game_state_id ON public.chat_histories USING btree (game_state_id);
+CREATE INDEX idx_chat_histories_game_state_id ON public.games USING btree (game_state_id);
 
 
 --
--- Name: chat_histories chat_histories_game_state_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: games chat_histories_game_state_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.chat_histories
+ALTER TABLE ONLY public.games
     ADD CONSTRAINT chat_histories_game_state_id_fkey FOREIGN KEY (game_state_id) REFERENCES public.game_states(id) ON DELETE CASCADE;
 
 
 --
--- Name: chat_histories chat_histories_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+-- Name: games chat_histories_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
-ALTER TABLE ONLY public.chat_histories
+ALTER TABLE ONLY public.games
     ADD CONSTRAINT chat_histories_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
@@ -234,16 +234,16 @@ ALTER TABLE ONLY public.game_states
 
 
 --
--- Name: chat_histories; Type: ROW SECURITY; Schema: public; Owner: -
---
-
-ALTER TABLE public.chat_histories ENABLE ROW LEVEL SECURITY;
-
---
 -- Name: game_states; Type: ROW SECURITY; Schema: public; Owner: -
 --
 
 ALTER TABLE public.game_states ENABLE ROW LEVEL SECURITY;
+
+--
+-- Name: games; Type: ROW SECURITY; Schema: public; Owner: -
+--
+
+ALTER TABLE public.games ENABLE ROW LEVEL SECURITY;
 
 --
 -- PostgreSQL database dump complete

@@ -51,13 +51,27 @@ export default {
       english: "English",
       french: "French",
     },
-    common: {
-      toggleTheme: "Toggle theme",
-    },
     myGames: {
-      error: "Failed to load games",
-      savedGame: "Saved game",
-      noMessages: "No messages",
+      error: "Erreur lors du chargement des parties",
+      savedGame: "Partie sauvegardée",
+      noMessages: "Aucun message",
+      title: "Mes parties",
+      lastPlayed: "Dernière partie le",
+      continue: "Continuer",
+      newGame: "Nouvelle partie",
+      startNew: "Commencer une nouvelle aventure",
+      create: "Créer",
+      deleteTitle: "Supprimer la partie",
+      deleteDescription: "Êtes-vous sûr de vouloir supprimer cette partie ? Cette action est irréversible.",
+      deleted: "Partie supprimée avec succès",
+      deleteFailed: "Échec de la suppression de la partie"
+    },
+    common: {
+      toggleTheme: "Changer le thème",
+      cancel: "Annuler",
+      delete: "Supprimer",
+      success: "Succès",
+      error: "Erreur"
     }
   },
 };
