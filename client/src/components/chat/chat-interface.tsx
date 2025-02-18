@@ -49,10 +49,13 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      // Envoyer tous les messages comme contexte
+      // Récupérer les 2 dernières paires de messages (4 messages au total)
+      const lastMessages = messages.slice(-4);
+      const contextMessages = [...lastMessages, userMessage];
+
       const res = await apiRequest("POST", "/api/chat", {
         message: input,
-        context: messages.map((m) => ({
+        context: contextMessages.map((m) => ({
           role: m.role,
           content: m.content,
           timestamp: m.timestamp,
@@ -71,7 +74,6 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       const updatedMessages = [...messages, userMessage, assistantMessage];
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Only auto-save if enabled
       if (autoSave) {
         await handleSaveConversation(updatedMessages, true);
       }
