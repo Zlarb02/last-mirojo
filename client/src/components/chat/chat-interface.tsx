@@ -53,6 +53,10 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       const lastMessages = messages.slice(-4);
       const contextMessages = [...lastMessages, userMessage];
 
+      // Récupérer le game state actuel
+      const gameState = await apiRequest("GET", `/api/game-state`);
+      const gameStateData = await gameState.json();
+
       const res = await apiRequest("POST", "/api/chat", {
         message: input,
         context: contextMessages.map((m) => ({
@@ -60,6 +64,11 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
           content: m.content,
           timestamp: m.timestamp,
         })),
+        gameContext: {
+          stats: gameStateData.stats,
+          inventory: gameStateData.inventory,
+          eventLog: gameStateData.eventLog,
+        },
       });
 
       if (!res.ok) throw new Error("Failed to get AI response");
@@ -70,6 +79,9 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         content: data.response,
         timestamp: new Date().toISOString(),
       };
+
+      // Parser et mettre à jour le game state en fonction de la réponse
+      await parseAndUpdateGameState(data.response, gameStateData);
 
       const updatedMessages = [...messages, userMessage, assistantMessage];
       setMessages((prev) => [...prev, assistantMessage]);
@@ -132,6 +144,51 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         variant: "destructive",
       });
     }
+  };
+
+  // Ajouter cette fonction dans ChatInterface
+  const parseAndUpdateGameState = async (
+    content: string,
+    currentState: any
+  ) => {
+    const eventRegex = /<event>(.*?):(.*?)<\/event>/g;
+    let match;
+    const updates: any = {
+      stats: { ...currentState.stats }, // Copier le state actuel
+      inventory: [...currentState.inventory], // Copier l'inventaire actuel
+      eventLog: [...currentState.eventLog], // Copier l'historique
+    };
+
+    while ((match = eventRegex.exec(content)) !== null) {
+      const [_, type, detail] = match;
+      switch (type) {
+        case "DAMAGE":
+          updates.stats.health = Math.max(
+            (updates.stats.health || 100) - Number(detail),
+            0
+          );
+          updates.eventLog.push(`Dégâts subis: ${detail}`);
+          break;
+        case "HEAL":
+          updates.stats.health = Math.min(
+            (updates.stats.health || 100) + Number(detail),
+            100
+          );
+          updates.eventLog.push(`Soins reçus: ${detail}`);
+          break;
+        case "ITEM_FOUND":
+          updates.inventory.push(detail);
+          updates.eventLog.push(`Item trouvé: ${detail}`);
+          break;
+        // Ajouter d'autres types d'événements selon les besoins
+      }
+    }
+
+    if (Object.keys(updates.stats).length > 0 || updates.inventory.length > 0) {
+      await apiRequest("PATCH", "/api/game-state", updates);
+    }
+
+    return updates; // Retourner les mises à jour pour usage ultérieur si nécessaire
   };
 
   return (

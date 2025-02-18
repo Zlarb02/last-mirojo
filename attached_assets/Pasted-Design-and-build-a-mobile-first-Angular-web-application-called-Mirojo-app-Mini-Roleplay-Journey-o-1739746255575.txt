@@ -1,3 +1,4 @@
+Original Prompt for frontend:
 Design and build a mobile-first Angular web application called "Mirojo.app Mini Roleplay Journey", offering a futuristic and immersive role-playing experience inspired by AI-dungeon games. The app will feature a chatbot as its core AI engine, leveraging the @n8n/chat package for initial AI backend integration. The focus will be on delivering a creative, engaging, and eco-conscious experience.
 Core Functionalities
 Frontend Features
@@ -21,15 +22,14 @@ Event Visuals
 
 Customization Options
 
-    Multi-Theme Support:
-        Offer multiple futuristic design themes, including one inspired by PrimeNG's Sakai Angular template.
+    Multi-Theme Support,
     Multilingual Support:
         Provide English and French language options for a broader user base.
 
 Eco-Friendly Design Goals
 
     Sustainable Development Practices:
-        Use eco-conscious tools and services like Bolt.New, Lovable.Dev, and Replit to minimize the app's environmental footprint.
+        Use eco-conscious tools and services usable in environments like Bolt.New, Lovable.Dev, and Replit to minimize the app's environmental footprint.
         Optimize resource usage with lightweight frameworks and libraries wherever possible.
 
 Additional Notes

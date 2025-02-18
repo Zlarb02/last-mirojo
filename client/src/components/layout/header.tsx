@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { LogOut, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import logoPath from "@/assets/logo.png";
 
 export function Header() {
   const { logoutMutation } = useAuth();
@@ -23,7 +24,16 @@ export function Header() {
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <h1 className="text-2xl ml-16 sm:mx-auto font-bold">mirojo.app</h1>
+        <div className="flex items-center gap-2 ml-16 sm:mx-auto">
+          <img
+            src={logoPath}
+            alt="Mirojo Logo"
+            width={32}
+            height={32}
+            className="w-8 h-8 dark:invert"
+          />
+          <h1 className="text-2xl font-bold hidden sm:block">mirojo.app</h1>
+        </div>
         <div className="flex items-center gap-4">
           <LanguageSwitcher />
           <Button

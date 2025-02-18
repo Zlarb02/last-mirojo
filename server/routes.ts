@@ -65,6 +65,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Game state route
+  app.get("/api/game-state", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const gameState = await storage.getGameState(userId);
+
+      // Si aucun état de jeu n'existe, renvoyer un état par défaut
+      if (!gameState) {
+        return res.json({
+          stats: {
+            health: 100,
+            mana: 100,
+            level: 1,
+          },
+          inventory: [],
+          eventLog: [],
+        });
+      }
+
+      res.json({
+        stats: gameState.stats,
+        inventory: gameState.inventory,
+        eventLog: gameState.eventLog,
+      });
+    } catch (error) {
+      console.error("Failed to fetch game state:", error);
+      res.status(500).json({ error: "Failed to fetch game state" });
+    }
+  });
+
+  // Route pour mettre à jour l'état du jeu
+  app.patch("/api/game-state", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const { stats, inventory, eventLog } = req.body;
+
+      await storage.updateGameState(userId, {
+        stats,
+        inventory,
+        eventLog,
+      });
+
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Failed to update game state:", error);
+      res.status(500).json({ error: "Failed to update game state" });
+    }
+  });
+
   // Chat endpoint
   app.post("/api/chat", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
