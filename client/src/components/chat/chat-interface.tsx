@@ -13,15 +13,17 @@ interface ChatInterfaceProps {
   initialConversation?: SavedConversation;
 }
 
-
 export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const [messages, setMessages] = useState<Message[]>(() => 
-    initialConversation?.messages || []
+  const [messages, setMessages] = useState<Message[]>(
+    () => initialConversation?.messages || []
   );
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentGameId, setCurrentGameId] = useState<number | undefined>(
+    initialConversation?.id
+  );
   const [autoSave, setAutoSave] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -41,7 +43,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       content: input,
       timestamp: new Date().toISOString(),
     };
-    
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
@@ -53,11 +55,11 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         context: messages.map((m) => ({
           role: m.role,
           content: m.content,
-          timestamp: m.timestamp
+          timestamp: m.timestamp,
         })),
       });
 
-      if (!res.ok) throw new Error('Failed to get AI response');
+      if (!res.ok) throw new Error("Failed to get AI response");
 
       const data = await res.json();
       const assistantMessage: Message = {
@@ -65,15 +67,14 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         content: data.response,
         timestamp: new Date().toISOString(),
       };
-      
+
       const updatedMessages = [...messages, userMessage, assistantMessage];
       setMessages((prev) => [...prev, assistantMessage]);
-      
+
       // Only auto-save if enabled
       if (autoSave) {
-        await handleSaveConversation(updatedMessages);
+        await handleSaveConversation(updatedMessages, true);
       }
-      
     } catch (error) {
       console.error("Failed to get AI response:", error);
       toast({
@@ -86,27 +87,41 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     }
   };
 
-  const handleSaveConversation = async (messagesToSave = messages) => {
+  const handleSaveConversation = async (
+    messagesToSave = messages,
+    isAutoSave = false
+  ) => {
     if (messagesToSave.length === 0) return;
 
     try {
-      const res = await apiRequest("POST", "/api/chat/save", {
-        conversationId: initialConversation?.id, // Ajouter l'ID pour mise à jour
+      const endpoint = "/api/game/save";
+      const payload = {
+        conversationId: currentGameId, // Utiliser l'ID stocké
         conversation: {
           messages: messagesToSave,
           timestamp: new Date().toISOString(),
-        }
-      });
-      
+        },
+      };
+
+      const res = await apiRequest("POST", endpoint, payload);
+
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.message || 'Failed to save conversation');
+        throw new Error(error.message || "Failed to save conversation");
       }
 
-      toast({
-        title: t("success"),
-        description: t("game.chat.saved"),
-      });
+      // Stocker l'ID du jeu après la première sauvegarde
+      const savedGame = await res.json();
+      if (!currentGameId && savedGame.id) {
+        setCurrentGameId(savedGame.id);
+      }
+
+      if (!isAutoSave) {
+        toast({
+          title: t("success"),
+          description: t("game.chat.saved"),
+        });
+      }
     } catch (error) {
       console.error("Failed to save conversation:", error);
       toast({
@@ -117,10 +132,9 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     }
   };
 
-
   return (
     <Card className="min-h-[300px] max-h-[600px] h-full flex flex-col">
-           <CardHeader className="flex flex-row justify-between items-center">
+      <CardHeader className="flex flex-row justify-between items-center">
         <CardTitle>{t("game.adventure")}</CardTitle>
         <div className="flex gap-2 relative z-10">
           <Button
@@ -128,9 +142,15 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
             type="button"
             variant={autoSave ? "default" : "outline"}
             className="relative active:scale-95 transition-all"
-            title={autoSave ? t("game.chat.autoSaveOn") : t("game.chat.autoSaveOff")}
+            title={
+              autoSave ? t("game.chat.autoSaveOn") : t("game.chat.autoSaveOff")
+            }
           >
-            <PowerIcon className={`h-4 w-4 ${autoSave ? "text-green-500" : "text-gray-500"}`} />
+            <PowerIcon
+              className={`h-4 w-4 ${
+                autoSave ? "text-green-500" : "text-gray-500"
+              }`}
+            />
           </Button>
           <Button
             onClick={() => handleSaveConversation()}
@@ -187,8 +207,8 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
             disabled={isLoading}
             className="flex-1"
           />
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isLoading}
             title={t("game.chat.send")}
           >

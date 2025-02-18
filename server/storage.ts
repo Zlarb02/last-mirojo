@@ -1,14 +1,23 @@
 import { User, InsertUser, GameState, games } from "@shared/schema";
 import { db, users, gameStates } from "./db";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
-// Add this interface
-interface GameData {
+interface Game {
+  id: number;
   user_id: number;
   game_state_id: number;
-  conversation: any;
+  conversation: {
+    messages: Array<{
+      role: string;
+      content: string;
+      timestamp: string;
+    }>;
+    timestamp: string;
+  };
+  created_at: string;
+  updated_at: string;
 }
 
 const PostgresSessionStore = connectPg(session);
@@ -33,12 +42,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Add this method to your storage class
-  async saveGame(data: GameData) {
-    return await db.insert(games).values({
-      user_id: data.user_id,
-      game_state_id: data.game_state_id,
-      conversation: data.conversation,
-    });
+  async saveGame(data: Pick<Game, "user_id" | "conversation">) {
+    // Créer d'abord un nouveau game state
+    const [gameState] = await db
+      .insert(gameStates)
+      .values({
+        userId: data.user_id,
+        stats: {},
+        inventory: [],
+        eventLog: [],
+        savedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    // Ensuite créer le jeu avec le game_state_id
+    const [savedGame] = await db
+      .insert(games)
+      .values({
+        user_id: data.user_id,
+        game_state_id: gameState.id,
+        conversation: data.conversation,
+      })
+      .returning();
+
+    return {
+      ...savedGame,
+      stats: gameState.stats,
+      saved_at: gameState.savedAt,
+    };
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -68,7 +99,7 @@ export class DatabaseStorage implements IStorage {
 
   async updateGameState(
     userId: number,
-    gameState: Partial<GameState>,
+    gameState: Partial<GameState>
   ): Promise<void> {
     const [existing] = await db
       .select()
@@ -100,11 +131,11 @@ export class DatabaseStorage implements IStorage {
       stats: {
         health: 100,
         mana: 100,
-        level: 1
+        level: 1,
       },
       inventory: [],
       eventLog: [],
-      savedAt: new Date().toISOString()
+      savedAt: new Date().toISOString(),
     };
 
     const [gameState] = await db
@@ -141,34 +172,35 @@ export class DatabaseStorage implements IStorage {
         saved_at: gameStates.savedAt,
       })
       .from(games)
-      .leftJoin(
-        gameStates,
-        eq(games.game_state_id, gameStates.id)
-      )
+      .leftJoin(gameStates, eq(games.game_state_id, gameStates.id))
       .where(eq(games.user_id, userId))
       .orderBy(desc(games.updated_at))
-      .then(games => games.map(game => ({
-        ...game,
-        id: Number(game.id), // Conversion explicite en number
-        user_id: Number(game.user_id),
-        game_state_id: Number(game.game_state_id)
-      })));
+      .then((games) =>
+        games.map((game) => ({
+          ...game,
+          id: Number(game.id), // Conversion explicite en number
+          user_id: Number(game.user_id),
+          game_state_id: Number(game.game_state_id),
+        }))
+      );
   }
 
   async getLastConversation(userId: number) {
     const [lastGame] = await db
       .select({
-        id: gameStates.id,
-        saved_at: gameStates.savedAt,
+        id: games.id,
+        user_id: games.user_id,
+        game_state_id: games.game_state_id,
         conversation: games.conversation,
+        created_at: games.created_at,
+        updated_at: games.updated_at,
+        stats: gameStates.stats,
+        saved_at: gameStates.savedAt,
       })
-      .from(gameStates)
-      .leftJoin(
-        games,
-        eq(gameStates.id, games.game_state_id)
-      )
-      .where(eq(gameStates.userId, userId))
-      .orderBy(desc(gameStates.savedAt))
+      .from(games)
+      .leftJoin(gameStates, eq(games.game_state_id, gameStates.id))
+      .where(eq(games.user_id, userId))
+      .orderBy(desc(games.updated_at))
       .limit(1);
 
     return lastGame?.conversation || null;
@@ -181,15 +213,15 @@ export class DatabaseStorage implements IStorage {
         user_id: games.user_id,
         game_state_id: games.game_state_id,
         conversation: games.conversation,
-        stats: gameStates.stats
+        created_at: games.created_at,
+        updated_at: games.updated_at,
+        stats: gameStates.stats,
+        saved_at: gameStates.savedAt,
       })
       .from(games)
-      .leftJoin(
-        gameStates,
-        eq(games.game_state_id, gameStates.id)
-      )
+      .leftJoin(gameStates, eq(games.game_state_id, gameStates.id))
       .where(eq(games.id, gameId));
-    
+
     return game;
   }
 
@@ -199,14 +231,14 @@ export class DatabaseStorage implements IStorage {
       .delete(games)
       .where(eq(games.id, gameId))
       .returning();
-    
+
     // Puis supprimer le game state associé si nécessaire
     if (deletedGame?.game_state_id) {
       await db
         .delete(gameStates)
         .where(eq(gameStates.id, deletedGame.game_state_id));
     }
-    
+
     return deletedGame;
   }
 
@@ -214,14 +246,13 @@ export class DatabaseStorage implements IStorage {
     const [updatedGame] = await db
       .update(games)
       .set({
-        conversation: data.conversation
+        conversation: data.conversation,
       })
       .where(eq(games.id, gameId))
       .returning();
-    
+
     return updatedGame;
   }
 }
-
 
 export const storage = new DatabaseStorage();

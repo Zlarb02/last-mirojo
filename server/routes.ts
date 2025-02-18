@@ -8,54 +8,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
 
   // Game state management
-// Add this endpoint after the existing chat endpoint
-app.post("/api/chat/save", async (req, res) => {
-  if (!req.isAuthenticated()) return res.sendStatus(401);
+  // Add this endpoint after the existing chat endpoint
+  app.post("/api/game/save", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
 
-  try {
-    const userId = req.user!.id;
-    const { conversationId, conversation } = req.body;
+    try {
+      const userId = req.user!.id;
+      const { conversationId, conversation } = req.body;
 
-    if (conversationId) {
-      // Vérifier que la conversation appartient à l'utilisateur
-      const existingGame = await storage.getGameById(conversationId);
-      if (!existingGame || existingGame.user_id !== userId) {
+      let savedGame;
+
+      // Si un ID est fourni, mettre à jour le jeu existant
+      if (conversationId) {
+        const existingGame = await storage.getGameById(conversationId);
+        if (!existingGame || existingGame.user_id !== userId) {
+          return res.status(404).json({ error: "Game not found" });
+        }
+
+        savedGame = await storage.updateGame(conversationId, {
+          conversation,
+        });
+      } else {
+        // Sinon, créer un nouveau jeu
+        savedGame = await storage.saveGame({
+          user_id: userId,
+          conversation,
+        });
+      }
+
+      res.json({
+        ...savedGame,
+      });
+    } catch (error) {
+      console.error("Failed to save game:", error);
+      res.status(500).json({ error: "Failed to save game" });
+    }
+  });
+
+  app.get("/api/game/load/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const gameId = parseInt(req.params.id);
+
+      const game = await storage.getGameById(gameId);
+
+      if (!game || game.user_id !== userId) {
         return res.status(404).json({ error: "Game not found" });
       }
 
-      // Mettre à jour la conversation existante
-      const updatedGame = await storage.updateGame(conversationId, {
-        conversation
-      });
-      return res.json(updatedGame);
+      res.json(game);
+    } catch (error) {
+      console.error("Failed to load game:", error);
+      res.status(500).json({ error: "Failed to load game" });
     }
-
-    // Si pas de conversationId, créer une nouvelle conversation
-    const gameState = await storage.getGameState(userId);
-    if (!gameState) {
-      return res.status(404).json({ error: "No game state found" });
-    }
-
-    const newGame = await storage.saveGame({
-      user_id: userId,
-      game_state_id: gameState.id,
-      conversation: conversation,
-    });
-
-    res.json(newGame);
-  } catch (error) {
-    console.error("Failed to save chat history:", error);
-    res.status(500).json({ error: "Failed to save conversation" });
-  }
-});
-
-  app.get("/api/game/load", async (req, res) => {
-    if (!req.isAuthenticated()) return res.sendStatus(401);
-
-    const userId = req.user!.id;
-    const gameState = await storage.getGameState(userId);
-    if (!gameState) return res.sendStatus(404);
-    res.json(gameState);
   });
 
   // Chat endpoint
@@ -85,7 +92,7 @@ app.post("/api/chat/save", async (req, res) => {
 
   app.get("/api/games", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     try {
       const userId = req.user!.id;
       const games = await storage.getUserGames(userId);
@@ -98,7 +105,7 @@ app.post("/api/chat/save", async (req, res) => {
 
   app.get("/api/games/last", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-  
+
     try {
       const userId = req.user!.id;
       const conversation = await storage.getLastConversation(userId);
@@ -109,19 +116,19 @@ app.post("/api/chat/save", async (req, res) => {
     }
   });
 
-   app.delete("/api/games/:id", async (req, res) => {
+  app.delete("/api/games/:id", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-  
+
     try {
       const userId = req.user!.id;
       const gameId = parseInt(req.params.id);
-  
+
       // Check if game exists and belongs to user
       const game = await storage.getGameById(gameId);
       if (!game || game.user_id !== userId) {
         return res.status(404).json({ error: "Game not found" });
       }
-  
+
       await storage.deleteGame(gameId);
       // Send 204 No Content for successful deletion
       res.sendStatus(204);

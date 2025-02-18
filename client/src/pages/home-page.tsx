@@ -8,23 +8,34 @@ import { apiRequest } from "@/lib/queryClient";
 import type { SavedConversation } from "@/types/chat";
 
 export default function HomePage() {
-  const [savedConversation, setSavedConversation] = useState<SavedConversation | undefined>(undefined);
-  
+  const [savedConversation, setSavedConversation] = useState<
+    SavedConversation | undefined
+  >(undefined);
+  const [gameId, setGameId] = useState<number | null>(null);
+
   useEffect(() => {
-    const loadLastConversation = async () => {
+    const loadConversation = async () => {
       try {
-        const res = await apiRequest("GET", "/api/games/last");
-        if (!res.ok) throw new Error('Failed to fetch last conversation');
-        
+        let res;
+        if (gameId) {
+          // Charger un jeu spécifique
+          res = await apiRequest("GET", `/api/game/load/${gameId}`);
+        } else {
+          // Charger le dernier jeu si aucun ID n'est spécifié
+          res = await apiRequest("GET", "/api/games/last");
+        }
+
+        if (!res.ok) throw new Error("Failed to fetch conversation");
+
         const data = await res.json();
         setSavedConversation(data.conversation || undefined);
       } catch (error) {
-        console.error("Failed to load last conversation:", error);
+        console.error("Failed to load conversation:", error);
       }
     };
 
-    loadLastConversation();
-  }, []);
+    loadConversation();
+  }, [gameId]); // Dépendance à gameId
 
   return (
     <div className="min-h-screen bg-background flex">
