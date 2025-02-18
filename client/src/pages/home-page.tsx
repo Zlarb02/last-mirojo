@@ -11,11 +11,14 @@ export default function HomePage() {
   const [savedConversation, setSavedConversation] = useState<
     SavedConversation | undefined
   >(undefined);
-  const [gameId, setGameId] = useState<number | null>(null);
 
   useEffect(() => {
     const loadConversation = async () => {
       try {
+        // Récupérer le gameId depuis l'URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const gameId = urlParams.get("gameId");
+
         let res;
         if (gameId) {
           // Charger un jeu spécifique
@@ -35,7 +38,7 @@ export default function HomePage() {
     };
 
     loadConversation();
-  }, [gameId]); // Dépendance à gameId
+  }, [window.location.search]); // Dépendance à l'URL pour détecter les changements
 
   return (
     <div className="min-h-screen bg-background flex">
