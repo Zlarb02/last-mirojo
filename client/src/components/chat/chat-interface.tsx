@@ -9,6 +9,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Message, SavedConversation } from "@/types/chat";
 import { useGameState } from "@/hooks/use-game-state";
+import { parseGameEvents, cleanMessageContent } from "@/lib/event-parser";
+import { AIMessage } from "./ai-message";
 
 interface ChatInterfaceProps {
   initialConversation?: SavedConversation;
@@ -35,6 +37,41 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       setMessages(initialConversation.messages);
     }
   }, [initialConversation?.timestamp]); // Dépend du timestamp pour détecter les changements
+
+  const handleResponse = async (response: string, currentState: any) => {
+    const events = parseGameEvents(response);
+    const cleanResponse = cleanMessageContent(response);
+    
+    // Create updates object based on events
+    const updates = {
+      stats: { ...currentState.stats },
+      inventory: [...currentState.inventory],
+      eventLog: [...currentState.eventLog]
+    };
+
+    events.forEach(event => {
+      switch (event.type) {
+        case 'HEALTH':
+          updates.stats.health = Math.max(0, Math.min(100, 
+            (updates.stats.health || 100) + Number(event.value)
+          ));
+          updates.eventLog.push(event.display);
+          break;
+        case 'MANA':
+          updates.stats.mana = Math.max(0, Math.min(100, 
+            (updates.stats.mana || 100) + Number(event.value)
+          ));
+          updates.eventLog.push(event.display);
+          break;
+        case 'ITEM_FOUND':
+          updates.inventory.push(event.value);
+          updates.eventLog.push(event.display);
+          break;
+      }
+    });
+
+    return { cleanResponse, updates };
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,17 +123,16 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       if (!res.ok) throw new Error("Failed to get AI response");
   
       const data = await res.json();
+      const { cleanResponse, updates } = await handleResponse(data.response, gameStateData);
+      
       const assistantMessage: Message = {
         role: "assistant",
-        content: data.response,
+        content: cleanResponse,
         timestamp: new Date().toISOString(),
       };
-  
-      // Parser et mettre à jour le game state en fonction de la réponse
+
       if (gameId) {
-        await parseAndUpdateGameState(data.response, gameStateData, gameId);
-      } else {
-        await parseAndUpdateGameState(data.response, gameStateData);
+        await updateGameState(gameId, updates);
       }
   
       const updatedMessages = [...messages, userMessage, assistantMessage];
@@ -268,7 +304,15 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
                       : "bg-muted"
                   }`}
                 >
-                  {message.content}
+                  {message.role === "assistant" ? (
+                    <AIMessage content={message.content} />
+                  ) : (
+                    message.content.split('\n').map((text, i) => (
+                      <p key={i} className={i > 0 ? "mt-2" : ""}>
+                        {text}
+                      </p>
+                    ))
+                  )}
                   {message.timestamp && (
                     <div className="text-xs opacity-50 mt-1">
                       {new Date(message.timestamp).toLocaleTimeString()}

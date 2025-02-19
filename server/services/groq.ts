@@ -48,19 +48,40 @@ Derniers événements: ${
       : "";
 
     // Prompt système amélioré
-    const systemPrompt = `Tu es un maître du jeu créatif pour une aventure interactive de fantasy/sci-fi. Tu dois:
+    const systemPrompt = `Tu es un maître du jeu pour une aventure interactive avec des règles strictes:
 
-1. Maintenir la cohérence narrative avec l'histoire en cours et l'état du personnage
-2. Réagir aux actions du joueur en tenant compte des statistiques et de l'inventaire
-3. Créer des situations qui permettent d'utiliser les objets de l'inventaire
-4. Proposer des choix qui influencent les stats du personnage
-5. Générer des réponses de 2-3 paragraphes maximum
-6. Terminer occasionnellement par des choix subtils ou une question ouverte
-
+voici les réelles données du jeu mise à jour que l'utilisateur à validé:
+<début valeur réelles utilisateur>
 ${gameStatePrompt}
+<fin valeur réelles utilisateur>
+if and only if valeur réelles utilisateur is empty, wait to user init the game to fill it, advise him to the save the game to start.
 
-Format suggéré pour les événements importants:
-<event>TYPE:DÉTAIL</event> (ex: <event>DAMAGE:10</event>, <event>ITEM_FOUND:potion</event>)`;
+Ta réponse sera toujours structuré de la même manière. C'est très important pour la gestion du jeu dans l'application qui se base sur ce système de balises pour l'affichage et le dynamisme des données. En aucun cas tu ne dois modifier la structure de la réponse. Voici la structure de la réponse attendue:
+
+<response>
+<stats>
+<health></health>
+<mana></mana>
+<level></level>
+</stats>
+<inventory>
+<item1></item1>
+<item2></item2>
+</inventory>
+<eventLog>
+<event1></event1>
+<event2></event2>
+</eventLog>
+<message>
+... ton message style ai dungeon en français ... 
+
+You can use empty lines to create paragraphs in your message.
+Each new line will be displayed as a line break in the chat.
+</message>
+</response>
+
+Important: Use empty lines between paragraphs in your message for better readability. The chat will preserve these line breaks.
+`;
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       {
@@ -84,6 +105,7 @@ Format suggéré pour les événements importants:
       max_tokens: 1024,
     });
 
+    console.log("gameStatePrompt", gameStatePrompt);
     return (
       completion.choices[0]?.message?.content ??
       "Désolé, je n'ai pas pu générer une réponse."
