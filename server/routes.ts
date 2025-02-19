@@ -70,20 +70,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
-      const userId = req.user!.id;
-      const gameState = await storage.getGameState(userId);
+      // Retourner un état initial par défaut
+      res.json({
+        stats: {
+          health: 100,
+          mana: 100,
+          level: 1
+        },
+        inventory: [],
+        eventLog: []
+      });
+    } catch (error) {
+      console.error("Failed to create initial game state:", error);
+      res.status(500).json({ error: "Failed to create initial game state" });
+    }
+  });
 
-      // Si aucun état de jeu n'existe, renvoyer un état par défaut
-      if (!gameState) {
-        return res.json({
-          stats: {
-            health: 100,
-            mana: 100,
-            level: 1,
-          },
-          inventory: [],
-          eventLog: [],
+  // Modifier la route PATCH pour gérer aussi les nouvelles parties
+  app.patch("/api/game-state", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const { stats, inventory, eventLog } = req.body;
+      const gameId = req.query.gameId ? parseInt(req.query.gameId as string) : null;
+
+      if (gameId) {
+        // Mise à jour d'une partie existante
+        const game = await storage.getGameById(gameId);
+        if (!game || game.user_id !== userId) {
+          return res.status(404).json({ error: "Game not found" });
+        }
+        if (game.game_state_id === null) {
+          return res.status(404).json({ error: "Game state not found" });
+        }
+        await storage.updateGameStateByGameId(game.game_state_id, {
+          stats,
+          inventory,
+          eventLog,
         });
+      } else {
+        // Création d'un nouveau game state pour une nouvelle partie
+        const gameState = await storage.createInitialGameState(userId);
+        await storage.updateGameStateByGameId(gameState.id, {
+          stats,
+          inventory,
+          eventLog,
+        });
+      }
+
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Failed to update game state:", error);
+      res.status(500).json({ error: "Failed to update game state" });
+    }
+  });
+
+  // Game state with game id route
+  app.get("/api/game-state/:gameId", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const gameId = parseInt(req.params.gameId);
+
+      // Vérifier que le jeu existe et appartient à l'utilisateur
+      const game = await storage.getGameById(gameId);
+      if (!game || game.user_id !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+
+      // Récupérer le game state associé au jeu
+      if (game.game_state_id === null) {
+        return res.status(404).json({ error: "Game state not found" });
+      }
+      const gameState = await storage.getGameStateByGameId(game.game_state_id);
+      if (!gameState) {
+        return res.status(404).json({ error: "Game state not found" });
       }
 
       res.json({
@@ -96,16 +159,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch game state" });
     }
   });
-
   // Route pour mettre à jour l'état du jeu
-  app.patch("/api/game-state", async (req, res) => {
+  app.patch("/api/game-state/:gameId", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
 
     try {
       const userId = req.user!.id;
+      const gameId = parseInt(req.params.gameId);
       const { stats, inventory, eventLog } = req.body;
 
-      await storage.updateGameState(userId, {
+      // Vérifier que le jeu existe et appartient à l'utilisateur
+      const game = await storage.getGameById(gameId);
+      if (!game || game.user_id !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+      if (game.game_state_id === null) {
+        return res.status(404).json({ error: "Game state not found" });
+      }
+      await storage.updateGameStateByGameId(game.game_state_id, {
         stats,
         inventory,
         eventLog,
@@ -121,10 +192,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat endpoint
   app.post("/api/chat", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-
+  
     try {
-      const { message, context } = req.body;
-      const response = await generateResponse(message, context);
+      const { message, context, gameState, gameId } = req.body;
+      
+      // Si un gameId est fourni, on récupère l'état du jeu depuis la base
+      let currentGameState = gameState;
+      if (gameId) {
+        const game = await storage.getGameById(gameId);
+        if (game && game.game_state_id) {
+          const dbGameState = await storage.getGameStateByGameId(game.game_state_id);
+          if (dbGameState) {
+            currentGameState = {
+              stats: dbGameState.stats,
+              inventory: dbGameState.inventory,
+              eventLog: dbGameState.eventLog
+            };
+          }
+        }
+      }
+
+      const response = await generateResponse(message, context, currentGameState);
       res.json({ response });
     } catch (error) {
       console.error("Chat error:", error);

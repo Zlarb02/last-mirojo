@@ -37,26 +37,36 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-
+  
     const userMessage: Message = {
       role: "user",
       content: input,
       timestamp: new Date().toISOString(),
     };
-
+  
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-
+  
     try {
       // Récupérer les 2 dernières paires de messages (4 messages au total)
       const lastMessages = messages.slice(-4);
       const contextMessages = [...lastMessages, userMessage];
-
-      // Récupérer le game state actuel
-      const gameState = await apiRequest("GET", `/api/game-state`);
-      const gameStateData = await gameState.json();
-
+  
+      // Récupérer le game state actuel en fonction du gameId
+      const urlParams = new URLSearchParams(window.location.search);
+      const gameId = urlParams.get("gameId");
+      
+      let gameStateRes;
+      if (gameId) {
+        gameStateRes = await apiRequest("GET", `/api/game-state/${gameId}`);
+      } else {
+        gameStateRes = await apiRequest("GET", `/api/game-state`);
+      }
+  
+      if (!gameStateRes.ok) throw new Error("Failed to fetch game state");
+      const gameStateData = await gameStateRes.json();
+  
       const res = await apiRequest("POST", "/api/chat", {
         message: input,
         context: contextMessages.map((m) => ({
@@ -64,28 +74,32 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
           content: m.content,
           timestamp: m.timestamp,
         })),
-        gameContext: {
+        gameState: {
           stats: gameStateData.stats,
           inventory: gameStateData.inventory,
           eventLog: gameStateData.eventLog,
         },
       });
-
+  
       if (!res.ok) throw new Error("Failed to get AI response");
-
+  
       const data = await res.json();
       const assistantMessage: Message = {
         role: "assistant",
         content: data.response,
         timestamp: new Date().toISOString(),
       };
-
+  
       // Parser et mettre à jour le game state en fonction de la réponse
-      await parseAndUpdateGameState(data.response, gameStateData);
-
+      if (gameId) {
+        await parseAndUpdateGameState(data.response, gameStateData, gameId);
+      } else {
+        await parseAndUpdateGameState(data.response, gameStateData);
+      }
+  
       const updatedMessages = [...messages, userMessage, assistantMessage];
       setMessages((prev) => [...prev, assistantMessage]);
-
+  
       if (autoSave) {
         await handleSaveConversation(updatedMessages, true);
       }
@@ -99,6 +113,52 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     } finally {
       setIsLoading(false);
     }
+  };
+  
+  // Update parseAndUpdateGameState to handle gameId
+  const parseAndUpdateGameState = async (
+    content: string,
+    currentState: any,
+    gameId?: string | null
+  ) => {
+    const eventRegex = /<event>(.*?):(.*?)<\/event>/g;
+    let match;
+    const updates: any = {
+      stats: { ...currentState.stats },
+      inventory: [...currentState.inventory],
+      eventLog: [...currentState.eventLog],
+    };
+  
+    while ((match = eventRegex.exec(content)) !== null) {
+      const [_, type, detail] = match;
+      switch (type) {
+        case "DAMAGE":
+          updates.stats.health = Math.max(
+            (updates.stats.health || 100) - Number(detail),
+            0
+          );
+          updates.eventLog.push(`Dégâts subis: ${detail}`);
+          break;
+        case "HEAL":
+          updates.stats.health = Math.min(
+            (updates.stats.health || 100) + Number(detail),
+            100
+          );
+          updates.eventLog.push(`Soins reçus: ${detail}`);
+          break;
+        case "ITEM_FOUND":
+          updates.inventory.push(detail);
+          updates.eventLog.push(`Item trouvé: ${detail}`);
+          break;
+      }
+    }
+  
+    if (Object.keys(updates.stats).length > 0 || updates.inventory.length > 0) {
+      const endpoint = gameId ? `/api/game-state/${gameId}` : "/api/game-state";
+      await apiRequest("PATCH", endpoint, updates);
+    }
+  
+    return updates;
   };
 
   const handleSaveConversation = async (
@@ -144,51 +204,6 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         variant: "destructive",
       });
     }
-  };
-
-  // Ajouter cette fonction dans ChatInterface
-  const parseAndUpdateGameState = async (
-    content: string,
-    currentState: any
-  ) => {
-    const eventRegex = /<event>(.*?):(.*?)<\/event>/g;
-    let match;
-    const updates: any = {
-      stats: { ...currentState.stats }, // Copier le state actuel
-      inventory: [...currentState.inventory], // Copier l'inventaire actuel
-      eventLog: [...currentState.eventLog], // Copier l'historique
-    };
-
-    while ((match = eventRegex.exec(content)) !== null) {
-      const [_, type, detail] = match;
-      switch (type) {
-        case "DAMAGE":
-          updates.stats.health = Math.max(
-            (updates.stats.health || 100) - Number(detail),
-            0
-          );
-          updates.eventLog.push(`Dégâts subis: ${detail}`);
-          break;
-        case "HEAL":
-          updates.stats.health = Math.min(
-            (updates.stats.health || 100) + Number(detail),
-            100
-          );
-          updates.eventLog.push(`Soins reçus: ${detail}`);
-          break;
-        case "ITEM_FOUND":
-          updates.inventory.push(detail);
-          updates.eventLog.push(`Item trouvé: ${detail}`);
-          break;
-        // Ajouter d'autres types d'événements selon les besoins
-      }
-    }
-
-    if (Object.keys(updates.stats).length > 0 || updates.inventory.length > 0) {
-      await apiRequest("PATCH", "/api/game-state", updates);
-    }
-
-    return updates; // Retourner les mises à jour pour usage ultérieur si nécessaire
   };
 
   return (

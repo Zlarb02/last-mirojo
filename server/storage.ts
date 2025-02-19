@@ -26,8 +26,8 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateGameState(userId: number, gameState: Partial<GameState>): Promise<void>;
-  getGameState(userId: number): Promise<GameState | undefined>;
+  updateGameStateByGameId(gameId: number, gameState: Partial<GameState>): Promise<void>;
+  getGameStateByGameId(gameId: number): Promise<GameState | undefined>;
   sessionStore: session.Store;
 }
 
@@ -97,41 +97,14 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateGameState(
-    userId: number,
-    gameState: Partial<GameState>
-  ): Promise<void> {
-    const [existing] = await db
-      .select()
-      .from(gameStates)
-      .where(eq(gameStates.userId, userId));
-
-    if (existing) {
-      await db
-        .update(gameStates)
-        .set({
-          ...gameState,
-          savedAt: new Date().toISOString(),
-        })
-        .where(eq(gameStates.userId, userId));
-    } else {
-      await db.insert(gameStates).values({
-        userId,
-        stats: gameState.stats || {},
-        inventory: gameState.inventory || {},
-        eventLog: gameState.eventLog || {},
-        savedAt: new Date().toISOString(),
-      });
-    }
-  }
 
   async createInitialGameState(userId: number): Promise<GameState> {
     const initialGameState = {
       userId,
       stats: {
-        health: 100,
-        mana: 100,
-        level: 1,
+        health: 0,
+        mana: 0,
+        level: 0,
       },
       inventory: [],
       eventLog: [],
@@ -146,18 +119,28 @@ export class DatabaseStorage implements IStorage {
     return gameState;
   }
 
-  async getGameState(userId: number): Promise<GameState | undefined> {
+  async getGameStateByGameId(gameStateId: number): Promise<GameState | undefined> {
     const [gameState] = await db
       .select()
       .from(gameStates)
-      .where(eq(gameStates.userId, userId));
+      .where(eq(gameStates.id, gameStateId));
 
-    if (!gameState) {
-      // Auto-create initial game state if none exists
-      return this.createInitialGameState(userId);
-    }
     return gameState;
-  }
+}
+
+
+async updateGameStateByGameId(
+  gameStateId: number,
+  gameState: Partial<GameState>
+): Promise<void> {
+  await db
+    .update(gameStates)
+    .set({
+      ...gameState,
+      savedAt: new Date().toISOString(),
+    })
+    .where(eq(gameStates.id, gameStateId));
+}
 
   async getUserGames(userId: number) {
     return await db

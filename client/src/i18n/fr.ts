@@ -22,6 +22,10 @@ export default {
         health: "Santé",
         mana: "Mana",
         level: "Niveau",
+        edit: "Modifier",
+        updated: "Statistiques mises à jour avec succès",
+        updateFailed: "Échec de la mise à jour des statistiques",
+        noGameId: "Aucun identifiant de partie trouvé"
       },
       events: {
         title: "Journal des Événements",
@@ -53,26 +57,26 @@ export default {
       french: "Français",
     },
     myGames: {
-      error: "Failed to load games",
-      savedGame: "Saved game",
-      noMessages: "No messages",
-      title: "My Games",
-      lastPlayed: "Last played on",
-      continue: "Continue",
-      newGame: "New Game",
-      startNew: "Start a new adventure",
-      create: "Create",
-      deleteTitle: "Delete game",
-      deleteDescription: "Are you sure you want to delete this game? This action cannot be undone.",
-      deleted: "Game deleted successfully",
-      deleteFailed: "Failed to delete game"
+      error: "Erreur lors du chargement des parties",
+      savedGame: "Partie sauvegardée",
+      noMessages: "Aucun message",
+      title: "Mes parties",
+      lastPlayed: "Dernière partie le",
+      continue: "Continuer",
+      newGame: "Nouvelle partie",
+      startNew: "Commencer une nouvelle aventure",
+      create: "Créer",
+      deleteTitle: "Supprimer la partie",
+      deleteDescription: "Êtes-vous sûr de vouloir supprimer cette partie ? Cette action est irréversible.",
+      deleted: "Partie supprimée avec succès",
+      deleteFailed: "Échec de la suppression de la partie"
     },
     common: {
-      toggleTheme: "Toggle theme",
-      cancel: "Cancel",
-      delete: "Delete",
-      success: "Success",
-      error: "Error"
+      toggleTheme: "Changer le thème",
+      cancel: "Annuler",
+      delete: "Supprimer",
+      success: "Succès",
+      error: "Erreur"
     }
   },
 };

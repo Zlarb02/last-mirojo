@@ -26,13 +26,13 @@ export async function generateResponse(
   gameContext?: GameContext
 ): Promise<string> {
   try {
-    // Création d'un résumé du contexte du jeu
+    // Création d'un résumé du contexte du jeu plus détaillé
     const gameStatePrompt = gameContext
       ? `
 État actuel du personnage:
-- Santé: ${gameContext.stats?.health}/100
-- Mana: ${gameContext.stats?.mana}/100
-- Niveau: ${gameContext.stats?.level}
+${Object.entries(gameContext.stats || {})
+  .map(([key, value]) => `- ${key}: ${value}`)
+  .join('\n')}
 
 Inventaire: ${
           gameContext.inventory?.length
