@@ -17,6 +17,10 @@ export const gameStates = pgTable("game_states", {
   inventory: jsonb("inventory").notNull(),
   eventLog: jsonb("event_log").notNull(),
   savedAt: text("saved_at").notNull(),
+  characterName: text("character_name"),
+  characterDescription: text("character_description"),
+  mainQuest: jsonb("main_quest"),
+  sideQuests: jsonb("side_quests"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

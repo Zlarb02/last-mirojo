@@ -102,13 +102,21 @@ export class DatabaseStorage implements IStorage {
     const initialGameState = {
       userId,
       stats: {
-        health: 0,
-        mana: 0,
-        level: 0,
+        health: 100,
+        mana: 100,
+        level: 1,
       },
       inventory: [],
       eventLog: [],
       savedAt: new Date().toISOString(),
+      characterName: "",
+      characterDescription: "",
+      mainQuest: {
+        title: "",
+        description: "",
+        status: "active"
+      },
+      sideQuests: []
     };
 
     const [gameState] = await db

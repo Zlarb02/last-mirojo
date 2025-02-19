@@ -11,6 +11,18 @@ interface GameState {
   stats: GameStats;
   inventory: string[];
   eventLog: string[];
+  characterName: string;
+  characterDescription: string;
+  mainQuest: {
+    title: string;
+    description: string;
+    status: 'active' | 'completed';
+  };
+  sideQuests: Array<{
+    title: string;
+    description: string;
+    status: 'active' | 'completed';
+  }>;
 }
 
 export function useGameState() {
@@ -21,7 +33,15 @@ export function useGameState() {
       level: 1,
     },
     inventory: [],
-    eventLog: []
+    eventLog: [],
+    characterName: "",
+    characterDescription: "",
+    mainQuest: {
+      title: "",
+      description: "",
+      status: "active"
+    },
+    sideQuests: []
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

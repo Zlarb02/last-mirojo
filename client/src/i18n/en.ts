@@ -75,7 +75,8 @@ export default {
       cancel: "Cancel",
       delete: "Delete",
       success: "Success",
-      error: "Error"
+      error: "Error",
+      save: "Save"
     }
 
   },

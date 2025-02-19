@@ -9,7 +9,6 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Message, SavedConversation } from "@/types/chat";
 import { useGameState } from "@/hooks/use-game-state";
-import { parseGameEvents, cleanMessageContent } from "@/lib/event-parser";
 import { AIMessage } from "./ai-message";
 
 interface ChatInterfaceProps {
@@ -39,60 +38,47 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
   }, [initialConversation?.timestamp]); // Dépend du timestamp pour détecter les changements
 
   const handleResponse = async (response: string, currentState: any) => {
-    const events = parseGameEvents(response);
-    const cleanResponse = cleanMessageContent(response);
-    
-    // Create updates object based on events
+    // Extraire le message des balises <response>
+    const messageMatch = response.match(/<response>([\s\S]*?)<\/response>/);
+    if (!messageMatch) return { cleanResponse: response, updates: currentState };
+
+    // Parser le contenu de la réponse
+    const content = messageMatch[1];
+    const healthMatch = content.match(/<health>(.*?)<\/health>/);
+    const manaMatch = content.match(/<mana>(.*?)<\/mana>/);
+    const levelMatch = content.match(/<level>(.*?)<\/level>/);
+
+    // Créer les mises à jour en fonction des valeurs trouvées
     const updates = {
       stats: { ...currentState.stats },
       inventory: [...currentState.inventory],
       eventLog: [...currentState.eventLog]
     };
 
-    events.forEach(event => {
-      switch (event.type) {
-        case 'HEALTH':
-          updates.stats.health = Math.max(0, Math.min(100, 
-            (updates.stats.health || 100) + Number(event.value)
-          ));
-          updates.eventLog.push(event.display);
-          break;
-        case 'MANA':
-          updates.stats.mana = Math.max(0, Math.min(100, 
-            (updates.stats.mana || 100) + Number(event.value)
-          ));
-          updates.eventLog.push(event.display);
-          break;
-        case 'ITEM_FOUND':
-          updates.inventory.push(event.value);
-          updates.eventLog.push(event.display);
-          break;
-      }
-    });
+    if (healthMatch) updates.stats.health = parseInt(healthMatch[1]);
+    if (manaMatch) updates.stats.mana = parseInt(manaMatch[1]);
+    if (levelMatch) updates.stats.level = parseInt(levelMatch[1]);
 
-    return { cleanResponse, updates };
+    return { cleanResponse: response, updates };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-  
+
     const userMessage: Message = {
       role: "user",
       content: input,
       timestamp: new Date().toISOString(),
     };
-  
+
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
-  
+
     try {
-      // Récupérer les 2 dernières paires de messages (4 messages au total)
       const lastMessages = messages.slice(-4);
       const contextMessages = [...lastMessages, userMessage];
-  
-      // Récupérer le game state actuel en fonction du gameId
       const urlParams = new URLSearchParams(window.location.search);
       const gameId = urlParams.get("gameId");
       
@@ -102,26 +88,19 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       } else {
         gameStateRes = await apiRequest("GET", `/api/game-state`);
       }
-  
+
       if (!gameStateRes.ok) throw new Error("Failed to fetch game state");
       const gameStateData = await gameStateRes.json();
-  
+
       const res = await apiRequest("POST", "/api/chat", {
         message: input,
-        context: contextMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-          timestamp: m.timestamp,
-        })),
-        gameState: {
-          stats: gameStateData.stats,
-          inventory: gameStateData.inventory,
-          eventLog: gameStateData.eventLog,
-        },
+        context: contextMessages,
+        gameState: gameStateData,
+        gameId
       });
-  
+
       if (!res.ok) throw new Error("Failed to get AI response");
-  
+
       const data = await res.json();
       const { cleanResponse, updates } = await handleResponse(data.response, gameStateData);
       
@@ -134,12 +113,11 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       if (gameId) {
         await updateGameState(gameId, updates);
       }
-  
-      const updatedMessages = [...messages, userMessage, assistantMessage];
+
       setMessages((prev) => [...prev, assistantMessage]);
-  
+
       if (autoSave) {
-        await handleSaveConversation(updatedMessages, true);
+        await handleSaveConversation([...messages, userMessage, assistantMessage], true);
       }
     } catch (error) {
       console.error("Failed to get AI response:", error);
@@ -151,54 +129,6 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  // Update parseAndUpdateGameState to handle gameId
-  const parseAndUpdateGameState = async (
-    content: string,
-    currentState: any,
-    gameId?: string | null
-  ) => {
-    const eventRegex = /<event>(.*?):(.*?)<\/event>/g;
-    let match;
-    const updates: any = {
-      stats: { ...currentState.stats },
-      inventory: [...currentState.inventory],
-      eventLog: [...currentState.eventLog],
-    };
-
-    let hasUpdates = false;
-  
-    while ((match = eventRegex.exec(content)) !== null) {
-      hasUpdates = true;
-      const [_, type, detail] = match;
-      switch (type) {
-        case "DAMAGE":
-          updates.stats.health = Math.max(
-            (updates.stats.health || 100) - Number(detail),
-            0
-          );
-          updates.eventLog.push(`Dégâts subis: ${detail}`);
-          break;
-        case "HEAL":
-          updates.stats.health = Math.min(
-            (updates.stats.health || 100) + Number(detail),
-            100
-          );
-          updates.eventLog.push(`Soins reçus: ${detail}`);
-          break;
-        case "ITEM_FOUND":
-          updates.inventory.push(detail);
-          updates.eventLog.push(`Item trouvé: ${detail}`);
-          break;
-      }
-    }
-  
-    if (hasUpdates && gameId) {
-      await updateGameState(gameId, updates);
-    }
-  
-    return updates;
   };
 
   const handleSaveConversation = async (

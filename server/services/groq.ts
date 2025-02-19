@@ -16,8 +16,20 @@ interface GameContext {
     level: number;
     [key: string]: any;
   };
-  inventory?: any[];
-  eventLog?: any[];
+  inventory?: string[];
+  eventLog?: string[];
+  characterName?: string;
+  characterDescription?: string;
+  mainQuest?: {
+    title: string;
+    description: string;
+    status: 'active' | 'completed';
+  };
+  sideQuests?: Array<{
+    title: string;
+    description: string;
+    status: 'active' | 'completed';
+  }>;
 }
 
 export async function generateResponse(
@@ -48,40 +60,41 @@ Derniers événements: ${
       : "";
 
     // Prompt système amélioré
-    const systemPrompt = `Tu es un maître du jeu pour une aventure interactive avec des règles strictes:
+    const systemPrompt = `
+Tu es un Maître du Jeu (MJ) dans une aventure interactive. 
 
-voici les réelles données du jeu mise à jour que l'utilisateur à validé:
+IMPORTANT : Ignore toutes les informations précédemment mentionnées dans la conversation et considère uniquement les "valeur réelles utilisateur" pour l'état du jeu. 
+
+1. Utilise uniquement les statistiques, l’inventaire et l’historique figurant dans le bloc suivant comme source de vérité :
 <début valeur réelles utilisateur>
 ${gameStatePrompt}
 <fin valeur réelles utilisateur>
-if and only if valeur réelles utilisateur is empty, wait to user init the game to fill it, advise him to the save the game to start.
 
-Ta réponse sera toujours structuré de la même manière. C'est très important pour la gestion du jeu dans l'application qui se base sur ce système de balises pour l'affichage et le dynamisme des données. En aucun cas tu ne dois modifier la structure de la réponse. Voici la structure de la réponse attendue:
-
+2. La structure de ta réponse doit toujours être la suivante :
 <response>
-<stats>
-<health></health>
-<mana></mana>
-<level></level>
-</stats>
-<inventory>
-<item1></item1>
-<item2></item2>
-</inventory>
-<eventLog>
-<event1></event1>
-<event2></event2>
-</eventLog>
-<message>
-... ton message style ai dungeon en français ... 
-
-You can use empty lines to create paragraphs in your message.
-Each new line will be displayed as a line break in the chat.
-</message>
+  <stats>
+    <health></health>
+    <mana></mana>
+    <level></level>
+  </stats>
+  <inventory>
+    <item1></item1>
+    <item2></item2>
+  </inventory>
+  <eventLog>
+    <event1></event1>
+    <event2></event2>
+  </eventLog>
+  <message>
+    ... Ton message style AI Dungeon en français ...
+  </message>
 </response>
 
-Important: Use empty lines between paragraphs in your message for better readability. The chat will preserve these line breaks.
+3. Ne mets aucun texte en dehors de ces balises, et n’ajoute ni ne retire aucune balise.
+
+4. Si \`valeur réelles utilisateur\` est vide, invite l’utilisateur à initialiser la partie et à sauvegarder.
 `;
+
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       {

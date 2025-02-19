@@ -76,7 +76,8 @@ export default {
       cancel: "Annuler",
       delete: "Supprimer",
       success: "Succès",
-      error: "Erreur"
+      error: "Erreur",
+      save: "Sauvegarder"
     }
   },
 };

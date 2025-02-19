@@ -11,6 +11,16 @@ interface ParsedResponse {
   inventory: string[];
   eventLog: string[];
   message: string;
+  characterName?: string;
+  characterDescription?: string;
+  mainQuest?: {
+    title: string;
+    description: string;
+  };
+  sideQuests?: {
+    title: string;
+    description: string;
+  }[];
 }
 
 function parseAIResponse(content: string): ParsedResponse {
@@ -44,10 +54,25 @@ function parseAIResponse(content: string): ParsedResponse {
     return items;
   };
 
+  const characterName = getTagContent('characterName');
+  const characterDescription = getTagContent('characterDescription');
+  const mainQuest = {
+    title: getTagContent('mainQuest/title'),
+    description: getTagContent('mainQuest/description')
+  };
+  const sideQuests = extractNumberedItems('sideQuest').map(quest => ({
+    title: getTagContent(`sideQuest${quest}/title`),
+    description: getTagContent(`sideQuest${quest}/description`)
+  }));
+
   return {
     stats,
     inventory: extractNumberedItems('item'),
     eventLog: extractNumberedItems('event'),
+    characterName,
+    characterDescription,
+    mainQuest,
+    sideQuests,
     message: message.replace(/\n{3,}/g, '\n\n').trim(),
   };
 }
@@ -67,10 +92,17 @@ export function AIMessage({ content }: { content: string }) {
 
     const parsed = parseAIResponse(responseMatch[1]);
     const hasStats = parsed.stats.health || parsed.stats.mana || parsed.stats.level;
-    const hasInventory = parsed.inventory.length > 0;
 
     return (
       <div className="space-y-4">
+        {parsed.characterName && (
+          <div className="text-sm font-medium">
+            👤 {parsed.characterName}
+            {parsed.characterDescription && (
+              <p className="text-sm text-muted-foreground mt-1">{parsed.characterDescription}</p>
+            )}
+          </div>
+        )}
         {hasStats && (
           <div className="flex gap-4 text-sm text-muted-foreground">
             {parsed.stats.health && (
@@ -84,11 +116,15 @@ export function AIMessage({ content }: { content: string }) {
             )}
           </div>
         )}
-        {hasInventory && (
-          <div className="text-sm text-muted-foreground">
-            🎒 Inventaire: {parsed.inventory.join(', ')}
+        {parsed.mainQuest?.title && (
+          <div className="text-sm">
+            📜 Quête: {parsed.mainQuest.title}
+            <p className="text-sm text-muted-foreground mt-1">{parsed.mainQuest.description}</p>
           </div>
         )}
+        <div className="text-sm text-muted-foreground">
+          🎒 Inventaire: {parsed.inventory.length > 0 ? parsed.inventory.join(', ') : 'Aucun objet'}
+        </div>
         <div className="prose prose-sm dark:prose-invert">
           {parsed.message.split('\n').map((text, i) => (
             <p key={i} className={i > 0 ? "mt-2" : ""}>
