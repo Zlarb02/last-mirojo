@@ -14,7 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const { conversationId, conversation } = req.body;
+      const { conversationId, conversation, gameState } = req.body;
 
       let savedGame;
 
@@ -28,11 +28,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         savedGame = await storage.updateGame(conversationId, {
           conversation,
         });
+
+        // Mettre à jour le game state
+        if (gameState && existingGame.game_state_id) {
+          await storage.updateGameStateByGameId(existingGame.game_state_id, gameState);
+        }
       } else {
-        // Sinon, créer un nouveau jeu
+        // Créer un nouveau jeu avec son game state
         savedGame = await storage.saveGame({
           user_id: userId,
           conversation,
+          gameState,
         });
       }
 

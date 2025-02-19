@@ -1,64 +1,27 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
-import { apiRequest } from "@/lib/queryClient";
+import { useGameState } from "@/hooks/use-game-state";
 import { useToast } from "@/hooks/use-toast";
-
-interface GameState {
-  stats: {
-    health: number;
-    mana: number;
-    level: number;
-  };
-  inventory: string[];
-  eventLog: string[];
-}
 
 export function CharacterStats() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { gameState, updateGameState } = useGameState();
   const [isEditing, setIsEditing] = useState(false);
-  const [gameState, setGameState] = useState<GameState>({
-    stats: {
-      health: 100,
-      mana: 100,
-      level: 1,
-    },
-    inventory: [],
-    eventLog: []
-  });
   const [editedStats, setEditedStats] = useState(gameState.stats);
 
-  const fetchGameState = async () => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const gameId = urlParams.get("gameId");
-      
-      let res;
-      if (gameId) {
-        res = await apiRequest("GET", `/api/game-state/${gameId}`);
-      } else {
-        // Pour une nouvelle partie, utiliser l'endpoint sans gameId
-        res = await apiRequest("GET", `/api/game-state`);
-      }
-  
-      if (!res.ok) throw new Error("Failed to fetch game state");
-      const data = await res.json();
-      setGameState(data);
-      setEditedStats(data.stats);
-    } catch (error) {
-      console.error("Failed to fetch game state:", error);
-    }
-  };
+  // Récupérer le gameId depuis l'URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const gameId = urlParams.get("gameId");
 
-  useEffect(() => {
-    fetchGameState();
-    const interval = setInterval(fetchGameState, 15000);
-    return () => clearInterval(interval);
-  }, []);
+  // Ne rien afficher si pas de gameId
+  if (!gameId) {
+    return null;
+  }
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -83,24 +46,19 @@ export function CharacterStats() {
         return;
       }
 
-      const res = await apiRequest("PATCH", `/api/game-state/${gameId}`, {
+      const success = await updateGameState(gameId, {
         stats: editedStats,
         inventory: gameState.inventory,
         eventLog: gameState.eventLog
       });
 
-      if (!res.ok) throw new Error("Failed to update game state");
-
-      setGameState({
-        ...gameState,
-        stats: editedStats
-      });
-      setIsEditing(false);
-      
-      toast({
-        title: t("success"),
-        description: t("game.stats.updated")
-      });
+      if (success) {
+        setIsEditing(false);
+        toast({
+          title: t("success"),
+          description: t("game.stats.updated")
+        });
+      }
     } catch (error) {
       console.error("Failed to update game state:", error);
       toast({

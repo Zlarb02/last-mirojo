@@ -8,6 +8,7 @@ import { Save, Send, Loader2, PowerIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Message, SavedConversation } from "@/types/chat";
+import { useGameState } from "@/hooks/use-game-state";
 
 interface ChatInterfaceProps {
   initialConversation?: SavedConversation;
@@ -16,6 +17,7 @@ interface ChatInterfaceProps {
 export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { gameState, updateGameState } = useGameState();
   const [messages, setMessages] = useState<Message[]>(
     () => initialConversation?.messages || []
   );
@@ -128,8 +130,11 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       inventory: [...currentState.inventory],
       eventLog: [...currentState.eventLog],
     };
+
+    let hasUpdates = false;
   
     while ((match = eventRegex.exec(content)) !== null) {
+      hasUpdates = true;
       const [_, type, detail] = match;
       switch (type) {
         case "DAMAGE":
@@ -153,9 +158,8 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       }
     }
   
-    if (Object.keys(updates.stats).length > 0 || updates.inventory.length > 0) {
-      const endpoint = gameId ? `/api/game-state/${gameId}` : "/api/game-state";
-      await apiRequest("PATCH", endpoint, updates);
+    if (hasUpdates && gameId) {
+      await updateGameState(gameId, updates);
     }
   
     return updates;
@@ -166,30 +170,40 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     isAutoSave = false
   ) => {
     if (messagesToSave.length === 0) return;
-
+  
     try {
       const endpoint = "/api/game/save";
+      const { stats, inventory, eventLog } = gameState;
+      
       const payload = {
-        conversationId: currentGameId, // Utiliser l'ID stocké
+        conversationId: currentGameId,
         conversation: {
           messages: messagesToSave,
           timestamp: new Date().toISOString(),
         },
+        gameState: {
+          stats,
+          inventory,
+          eventLog,
+        }
       };
-
+  
       const res = await apiRequest("POST", endpoint, payload);
-
+  
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to save conversation");
       }
-
-      // Stocker l'ID du jeu après la première sauvegarde
+  
       const savedGame = await res.json();
       if (!currentGameId && savedGame.id) {
         setCurrentGameId(savedGame.id);
+        // Mettre à jour l'URL avec le nouveau gameId
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('gameId', String(savedGame.id));
+        window.history.pushState({}, '', newUrl.toString());
       }
-
+  
       if (!isAutoSave) {
         toast({
           title: t("success"),

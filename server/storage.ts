@@ -42,15 +42,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Add this method to your storage class
-  async saveGame(data: Pick<Game, "user_id" | "conversation">) {
+  async saveGame(data: Pick<Game, "user_id" | "conversation"> & { gameState?: any }) {
     // Créer d'abord un nouveau game state
     const [gameState] = await db
       .insert(gameStates)
       .values({
         userId: data.user_id,
-        stats: {},
-        inventory: [],
-        eventLog: [],
+        stats: data.gameState?.stats || {},
+        inventory: data.gameState?.inventory || [],
+        eventLog: data.gameState?.eventLog || [],
         savedAt: new Date().toISOString(),
       })
       .returning();
