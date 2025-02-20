@@ -1,4 +1,12 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  jsonb,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -31,12 +39,12 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
-  user_id: integer("user_id").references(() => users.id, { 
-    onDelete: "cascade", 
-    onUpdate: "cascade" 
+  user_id: integer("user_id").references(() => users.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
   }),
-  game_state_id: integer("game_state_id").references(() => gameStates.id, { 
-    onDelete: "cascade" 
+  game_state_id: integer("game_state_id").references(() => gameStates.id, {
+    onDelete: "cascade",
   }),
   conversation: jsonb("conversation").notNull(),
   created_at: timestamp("created_at").defaultNow(),

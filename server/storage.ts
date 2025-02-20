@@ -26,7 +26,10 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateGameStateByGameId(gameId: number, gameState: Partial<GameState>): Promise<void>;
+  updateGameStateByGameId(
+    gameId: number,
+    gameState: Partial<GameState>
+  ): Promise<void>;
   getGameStateByGameId(gameId: number): Promise<GameState | undefined>;
   sessionStore: session.Store;
 }
@@ -41,9 +44,38 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  // Add this method to your storage class
-  async saveGame(data: Pick<Game, "user_id" | "conversation"> & { gameState?: any }) {
-    // Créer d'abord un nouveau game state
+  async createInitialGameState(userId: number): Promise<GameState> {
+    const initialGameState = {
+      userId,
+      stats: {
+        health: 100,
+        mana: 100,
+        level: 1,
+      },
+      inventory: [],
+      eventLog: [],
+      savedAt: new Date().toISOString(),
+      characterName: "",
+      characterDescription: "",
+      mainQuest: {
+        title: "",
+        description: "",
+        status: "active",
+      },
+      sideQuests: [],
+    };
+
+    const [gameState] = await db
+      .insert(gameStates)
+      .values(initialGameState)
+      .returning();
+
+    return gameState;
+  }
+
+  async saveGame(
+    data: Pick<Game, "user_id" | "conversation"> & { gameState?: any }
+  ) {
     const [gameState] = await db
       .insert(gameStates)
       .values({
@@ -51,6 +83,14 @@ export class DatabaseStorage implements IStorage {
         stats: data.gameState?.stats || {},
         inventory: data.gameState?.inventory || [],
         eventLog: data.gameState?.eventLog || [],
+        characterName: data.gameState?.characterName || "",
+        characterDescription: data.gameState?.characterDescription || "",
+        mainQuest: data.gameState?.mainQuest || {
+          title: "",
+          description: "",
+          status: "active",
+        },
+        sideQuests: data.gameState?.sideQuests || [],
         savedAt: new Date().toISOString(),
       })
       .returning();
@@ -97,58 +137,29 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-
-  async createInitialGameState(userId: number): Promise<GameState> {
-    const initialGameState = {
-      userId,
-      stats: {
-        health: 100,
-        mana: 100,
-        level: 1,
-      },
-      inventory: [],
-      eventLog: [],
-      savedAt: new Date().toISOString(),
-      characterName: "",
-      characterDescription: "",
-      mainQuest: {
-        title: "",
-        description: "",
-        status: "active"
-      },
-      sideQuests: []
-    };
-
-    const [gameState] = await db
-      .insert(gameStates)
-      .values(initialGameState)
-      .returning();
-
-    return gameState;
-  }
-
-  async getGameStateByGameId(gameStateId: number): Promise<GameState | undefined> {
+  async getGameStateByGameId(
+    gameStateId: number
+  ): Promise<GameState | undefined> {
     const [gameState] = await db
       .select()
       .from(gameStates)
       .where(eq(gameStates.id, gameStateId));
 
     return gameState;
-}
+  }
 
-
-async updateGameStateByGameId(
-  gameStateId: number,
-  gameState: Partial<GameState>
-): Promise<void> {
-  await db
-    .update(gameStates)
-    .set({
-      ...gameState,
-      savedAt: new Date().toISOString(),
-    })
-    .where(eq(gameStates.id, gameStateId));
-}
+  async updateGameStateByGameId(
+    gameStateId: number,
+    gameState: Partial<GameState>
+  ): Promise<void> {
+    await db
+      .update(gameStates)
+      .set({
+        ...gameState,
+        savedAt: new Date().toISOString(),
+      })
+      .where(eq(gameStates.id, gameStateId));
+  }
 
   async getUserGames(userId: number) {
     return await db

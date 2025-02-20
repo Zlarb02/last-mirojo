@@ -7,7 +7,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "react-i18next";
 import { useGameState } from "@/hooks/use-game-state";
 import { useToast } from "@/hooks/use-toast";
-import { Activity, Heart, Atom, Star, User, Book, Backpack } from "lucide-react";
+import {
+  Activity,
+  Heart,
+  Atom,
+  Star,
+  User,
+  Book,
+  Backpack,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface EditedState {
@@ -21,13 +29,14 @@ interface EditedState {
   mainQuest: {
     title: string;
     description: string;
-    status: 'active' | 'completed';
+    status: "active" | "completed";
   };
   sideQuests: Array<{
     title: string;
     description: string;
-    status: 'active' | 'completed';
+    status: "active" | "completed";
   }>;
+  inventory: string[]; // Ajout de l'inventaire
 }
 
 export function CharacterStats() {
@@ -39,12 +48,17 @@ export function CharacterStats() {
     stats: {
       health: gameState.stats.health,
       mana: gameState.stats.mana,
-      level: gameState.stats.level
+      level: gameState.stats.level,
     },
     characterName: gameState.characterName || "",
     characterDescription: gameState.characterDescription || "",
-    mainQuest: gameState.mainQuest || { title: "", description: "", status: "active" },
-    sideQuests: gameState.sideQuests || []
+    mainQuest: gameState.mainQuest || {
+      title: "",
+      description: "",
+      status: "active",
+    },
+    sideQuests: gameState.sideQuests || [],
+    inventory: gameState.inventory || [], // Ajout de l'inventaire
   });
 
   useEffect(() => {
@@ -52,12 +66,17 @@ export function CharacterStats() {
       stats: {
         health: gameState.stats.health,
         mana: gameState.stats.mana,
-        level: gameState.stats.level
+        level: gameState.stats.level,
       },
       characterName: gameState.characterName || "",
       characterDescription: gameState.characterDescription || "",
-      mainQuest: gameState.mainQuest || { title: "", description: "", status: "active" },
-      sideQuests: gameState.sideQuests || []
+      mainQuest: gameState.mainQuest || {
+        title: "",
+        description: "",
+        status: "active",
+      },
+      sideQuests: gameState.sideQuests || [],
+      inventory: gameState.inventory || [], // Ajout de l'inventaire
     });
   }, [gameState]);
 
@@ -80,8 +99,13 @@ export function CharacterStats() {
       stats: gameState.stats,
       characterName: gameState.characterName || "",
       characterDescription: gameState.characterDescription || "",
-      mainQuest: gameState.mainQuest || { title: "", description: "", status: "active" },
-      sideQuests: gameState.sideQuests || []
+      mainQuest: gameState.mainQuest || {
+        title: "",
+        description: "",
+        status: "active",
+      },
+      sideQuests: gameState.sideQuests || [],
+      inventory: gameState.inventory || [], // Ajout de l'inventaire
     });
   };
 
@@ -89,7 +113,7 @@ export function CharacterStats() {
     try {
       const urlParams = new URLSearchParams(window.location.search);
       const gameId = urlParams.get("gameId");
-      
+
       if (!gameId) {
         toast({
           title: t("error"),
@@ -105,15 +129,15 @@ export function CharacterStats() {
         characterDescription: editedStats.characterDescription,
         mainQuest: editedStats.mainQuest,
         sideQuests: editedStats.sideQuests,
-        inventory: gameState.inventory,
-        eventLog: gameState.eventLog
+        inventory: editedStats.inventory, // Assurez-vous que l'inventaire est inclus
+        eventLog: gameState.eventLog,
       });
 
       if (success) {
         setIsEditing(false);
         toast({
           title: t("success"),
-          description: t("game.stats.updated")
+          description: t("game.stats.updated"),
         });
       }
     } catch (error) {
@@ -121,7 +145,7 @@ export function CharacterStats() {
       toast({
         title: t("error"),
         description: t("game.stats.updateFailed"),
-        variant: "destructive"
+        variant: "destructive",
       });
     }
   };
@@ -129,25 +153,25 @@ export function CharacterStats() {
   return (
     <Tabs defaultValue="stats" className="space-y-4">
       <TabsList className="grid w-full grid-cols-4 gap-4 bg-background p-1">
-        <TabsTrigger 
+        <TabsTrigger
           value="stats"
           className="transition-all data-[state=active]:scale-150"
         >
           <Activity className="h-4 w-4 transition-all data-[state=active]:text-primary" />
         </TabsTrigger>
-        <TabsTrigger 
+        <TabsTrigger
           value="character"
           className="transition-all data-[state=active]:scale-150"
         >
           <User className="h-4 w-4 transition-all data-[state=active]:text-primary" />
         </TabsTrigger>
-        <TabsTrigger 
+        <TabsTrigger
           value="quests"
           className="transition-all data-[state=active]:scale-150"
         >
           <Book className="h-4 w-4 transition-all data-[state=active]:text-primary" />
         </TabsTrigger>
-        <TabsTrigger 
+        <TabsTrigger
           value="inventory"
           className="transition-all data-[state=active]:scale-150"
         >
@@ -190,26 +214,33 @@ export function CharacterStats() {
                     min="0"
                     max="100"
                     value={editedStats.stats.health}
-                    onChange={(e) => setEditedStats({
-                      ...editedStats,
-                      stats: {
-                        ...editedStats.stats,
-                        health: Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
-                      }
-                    })}
+                    onChange={(e) =>
+                      setEditedStats({
+                        ...editedStats,
+                        stats: {
+                          ...editedStats.stats,
+                          health: Math.min(
+                            100,
+                            Math.max(0, parseInt(e.target.value) || 0)
+                          ),
+                        },
+                      })
+                    }
                     className="w-20 h-6 text-right"
                   />
                 ) : (
                   <span>{gameState.stats.health}/100</span>
                 )}
               </div>
-              <Progress 
-                value={isEditing ? editedStats.stats.health : gameState.stats.health} 
-                className="h-2 bg-red-100" 
+              <Progress
+                value={
+                  isEditing ? editedStats.stats.health : gameState.stats.health
+                }
+                className="h-2 bg-red-100"
                 indicatorClassName="bg-red-500"
               />
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <div className="flex items-center gap-2">
@@ -222,22 +253,29 @@ export function CharacterStats() {
                     min="0"
                     max="100"
                     value={editedStats.stats.mana}
-                    onChange={(e) => setEditedStats({
-                      ...editedStats,
-                      stats: {
-                        ...editedStats.stats,
-                        mana: Math.min(100, Math.max(0, parseInt(e.target.value) || 0))
-                      }
-                    })}
+                    onChange={(e) =>
+                      setEditedStats({
+                        ...editedStats,
+                        stats: {
+                          ...editedStats.stats,
+                          mana: Math.min(
+                            100,
+                            Math.max(0, parseInt(e.target.value) || 0)
+                          ),
+                        },
+                      })
+                    }
                     className="w-20 h-6 text-right"
                   />
                 ) : (
                   <span>{gameState.stats.mana}/100</span>
                 )}
               </div>
-              <Progress 
-                value={isEditing ? editedStats.stats.mana : gameState.stats.mana} 
-                className="h-2 bg-blue-100" 
+              <Progress
+                value={
+                  isEditing ? editedStats.stats.mana : gameState.stats.mana
+                }
+                className="h-2 bg-blue-100"
                 indicatorClassName="bg-blue-500"
               />
             </div>
@@ -252,17 +290,21 @@ export function CharacterStats() {
                   type="number"
                   min="1"
                   value={editedStats.stats.level}
-                  onChange={(e) => setEditedStats({
-                    ...editedStats,
-                    stats: {
-                      ...editedStats.stats,
-                      level: Math.max(1, parseInt(e.target.value) || 1)
-                    }
-                  })}
+                  onChange={(e) =>
+                    setEditedStats({
+                      ...editedStats,
+                      stats: {
+                        ...editedStats.stats,
+                        level: Math.max(1, parseInt(e.target.value) || 1),
+                      },
+                    })
+                  }
                   className="w-20 h-6 text-right"
                 />
               ) : (
-                <span className="text-2xl font-bold">{gameState.stats.level}</span>
+                <span className="text-2xl font-bold">
+                  {gameState.stats.level}
+                </span>
               )}
             </div>
           </CardContent>
@@ -297,14 +339,18 @@ export function CharacterStats() {
               {isEditing ? (
                 <Input
                   value={editedStats.characterName}
-                  onChange={(e) => setEditedStats({
-                    ...editedStats,
-                    characterName: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setEditedStats({
+                      ...editedStats,
+                      characterName: e.target.value,
+                    })
+                  }
                   placeholder="Nom du personnage"
                 />
               ) : (
-                <p className="text-sm">{gameState.characterName || "Sans nom"}</p>
+                <p className="text-sm">
+                  {gameState.characterName || "Sans nom"}
+                </p>
               )}
             </div>
             <div className="space-y-2">
@@ -312,14 +358,18 @@ export function CharacterStats() {
               {isEditing ? (
                 <Textarea
                   value={editedStats.characterDescription}
-                  onChange={(e) => setEditedStats({
-                    ...editedStats,
-                    characterDescription: e.target.value
-                  })}
+                  onChange={(e) =>
+                    setEditedStats({
+                      ...editedStats,
+                      characterDescription: e.target.value,
+                    })
+                  }
                   placeholder="Description du personnage"
                 />
               ) : (
-                <p className="text-sm">{gameState.characterDescription || "Aucune description"}</p>
+                <p className="text-sm">
+                  {gameState.characterDescription || "Aucune description"}
+                </p>
               )}
             </div>
           </CardContent>
@@ -355,31 +405,39 @@ export function CharacterStats() {
                 <div className="space-y-2">
                   <Input
                     value={editedStats.mainQuest.title}
-                    onChange={(e) => setEditedStats({
-                      ...editedStats,
-                      mainQuest: {
-                        ...editedStats.mainQuest,
-                        title: e.target.value
-                      }
-                    })}
+                    onChange={(e) =>
+                      setEditedStats({
+                        ...editedStats,
+                        mainQuest: {
+                          ...editedStats.mainQuest,
+                          title: e.target.value,
+                        },
+                      })
+                    }
                     placeholder="Titre de la quête"
                   />
                   <Textarea
                     value={editedStats.mainQuest.description}
-                    onChange={(e) => setEditedStats({
-                      ...editedStats,
-                      mainQuest: {
-                        ...editedStats.mainQuest,
-                        description: e.target.value
-                      }
-                    })}
+                    onChange={(e) =>
+                      setEditedStats({
+                        ...editedStats,
+                        mainQuest: {
+                          ...editedStats.mainQuest,
+                          description: e.target.value,
+                        },
+                      })
+                    }
                     placeholder="Description de la quête"
                   />
                 </div>
               ) : (
                 <div className="rounded-lg bg-muted p-4">
-                  <h4 className="font-medium">{gameState.mainQuest?.title || "Aucune quête"}</h4>
-                  <p className="text-sm mt-2">{gameState.mainQuest?.description}</p>
+                  <h4 className="font-medium">
+                    {gameState.mainQuest?.title || "Aucune quête"}
+                  </h4>
+                  <p className="text-sm mt-2">
+                    {gameState.mainQuest?.description}
+                  </p>
                 </div>
               )}
             </div>
@@ -410,16 +468,100 @@ export function CharacterStats() {
             )}
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {gameState.inventory.length > 0 ? (
-                gameState.inventory.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted">
-                    <span>{item}</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-muted-foreground">Inventaire vide</p>
+            <div className="space-y-4">
+              {isEditing && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nouvel item"
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        const input = e.currentTarget;
+                        if (input.value.trim()) {
+                          setEditedStats({
+                            ...editedStats,
+                            inventory: [
+                              ...editedStats.inventory,
+                              input.value.trim(),
+                            ],
+                          });
+                          input.value = "";
+                        }
+                      }
+                    }}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={(e) => {
+                      const input = e.currentTarget
+                        .previousElementSibling as HTMLInputElement;
+                      if (input.value.trim()) {
+                        setEditedStats({
+                          ...editedStats,
+                          inventory: [
+                            ...editedStats.inventory,
+                            input.value.trim(),
+                          ],
+                        });
+                        input.value = "";
+                      }
+                    }}
+                  >
+                    Ajouter
+                  </Button>
+                </div>
               )}
+              <div className="space-y-2">
+                {(isEditing ? editedStats.inventory : gameState.inventory).map(
+                  (item, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 rounded-lg bg-muted"
+                    >
+                      {isEditing ? (
+                        <Input
+                          value={item}
+                          onChange={(e) => {
+                            const newInventory = [...editedStats.inventory];
+                            newInventory[index] = e.target.value;
+                            setEditedStats({
+                              ...editedStats,
+                              inventory: newInventory,
+                            });
+                          }}
+                          className="w-full mr-2"
+                        />
+                      ) : (
+                        <span>{item}</span>
+                      )}
+                      {isEditing && (
+                        <div className="flex gap-2 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setEditedStats({
+                                ...editedStats,
+                                inventory: editedStats.inventory.filter(
+                                  (_, i) => i !== index
+                                ),
+                              });
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            Supprimer
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+                {(isEditing ? editedStats.inventory : gameState.inventory)
+                  .length === 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    Inventaire vide
+                  </p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>

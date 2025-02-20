@@ -23,12 +23,12 @@ interface GameContext {
   mainQuest?: {
     title: string;
     description: string;
-    status: 'active' | 'completed';
+    status: "active" | "completed";
   };
   sideQuests?: Array<{
     title: string;
     description: string;
-    status: 'active' | 'completed';
+    status: "active" | "completed";
   }>;
 }
 
@@ -42,9 +42,18 @@ export async function generateResponse(
     const gameStatePrompt = gameContext
       ? `
 État actuel du personnage:
+- Nom: ${gameContext.characterName || "Sans nom"}
+- Description: ${gameContext.characterDescription || "Aucune description"}
+
+Statistiques:
 ${Object.entries(gameContext.stats || {})
   .map(([key, value]) => `- ${key}: ${value}`)
-  .join('\n')}
+  .join("\n")}
+
+Quête principale:
+- Titre: ${gameContext.mainQuest?.title || "Aucune"}
+- Description: ${gameContext.mainQuest?.description || ""}
+- Statut: ${gameContext.mainQuest?.status || "active"}
 
 Inventaire: ${
           gameContext.inventory?.length
@@ -59,18 +68,24 @@ Derniers événements: ${
 `
       : "";
 
-    // Prompt système amélioré
+    // Mettre à jour le prompt système pour inclure les nouvelles informations
     const systemPrompt = `
 Tu es un Maître du Jeu (MJ) dans une aventure interactive. 
 
 IMPORTANT : Ignore toutes les informations précédemment mentionnées dans la conversation et considère uniquement les "valeur réelles utilisateur" pour l'état du jeu. 
 
-1. Utilise uniquement les statistiques, l’inventaire et l’historique figurant dans le bloc suivant comme source de vérité :
+1. Utilise uniquement les informations suivantes comme source de vérité :
 <début valeur réelles utilisateur>
 ${gameStatePrompt}
 <fin valeur réelles utilisateur>
 
-2. La structure de ta réponse doit toujours être la suivante :
+2. Dans tes réponses, prends en compte :
+   - Le nom et la description du personnage pour personnaliser l'histoire
+   - La quête principale actuelle pour orienter l'histoire
+   - L'inventaire pour les actions possibles
+   - Les statistiques pour les défis
+
+3. La structure de ta réponse doit toujours être la suivante :
 <response>
   <stats>
     <health></health>
@@ -86,15 +101,14 @@ ${gameStatePrompt}
     <event2></event2>
   </eventLog>
   <message>
-    ... Ton message style AI Dungeon en français ...
+    ... Ton message style AI Dungeon en français, en tenant compte du contexte du personnage ...
   </message>
 </response>
 
-3. Ne mets aucun texte en dehors de ces balises, et n’ajoute ni ne retire aucune balise.
+4. Ne mets aucun texte en dehors de ces balises, et n'ajoute ni ne retire aucune balise.
 
-4. Si \`valeur réelles utilisateur\` est vide, invite l’utilisateur à initialiser la partie et à sauvegarder.
+5. Si \`valeur réelles utilisateur\` est vide, invite l'utilisateur à initialiser la partie et à sauvegarder.
 `;
-
 
     const messages: OpenAI.ChatCompletionMessageParam[] = [
       {

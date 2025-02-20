@@ -31,7 +31,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Mettre à jour le game state
         if (gameState && existingGame.game_state_id) {
-          await storage.updateGameStateByGameId(existingGame.game_state_id, gameState);
+          await storage.updateGameStateByGameId(
+            existingGame.game_state_id,
+            gameState
+          );
         }
       } else {
         // Créer un nouveau jeu avec son game state
@@ -81,10 +84,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stats: {
           health: 100,
           mana: 100,
-          level: 1
+          level: 1,
         },
         inventory: [],
-        eventLog: []
+        eventLog: [],
+        characterName: "",
+        characterDescription: "",
+        mainQuest: { title: "", description: "", status: "active" },
+        sideQuests: [],
       });
     } catch (error) {
       console.error("Failed to create initial game state:", error);
@@ -99,7 +106,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const { stats, inventory, eventLog } = req.body;
-      const gameId = req.query.gameId ? parseInt(req.query.gameId as string) : null;
+      const gameId = req.query.gameId
+        ? parseInt(req.query.gameId as string)
+        : null;
 
       if (gameId) {
         // Mise à jour d'une partie existante
@@ -159,6 +168,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stats: gameState.stats,
         inventory: gameState.inventory,
         eventLog: gameState.eventLog,
+        characterName: gameState.characterName,
+        characterDescription: gameState.characterDescription,
+        mainQuest: gameState.mainQuest || {
+          title: "",
+          description: "",
+          status: "active",
+        },
+        sideQuests: gameState.sideQuests || [],
       });
     } catch (error) {
       console.error("Failed to fetch game state:", error);
@@ -172,7 +189,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const gameId = parseInt(req.params.gameId);
-      const { stats, inventory, eventLog } = req.body;
+      const {
+        stats,
+        inventory,
+        eventLog,
+        characterName,
+        characterDescription,
+        mainQuest,
+        sideQuests,
+      } = req.body;
 
       // Vérifier que le jeu existe et appartient à l'utilisateur
       const game = await storage.getGameById(gameId);
@@ -186,6 +211,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         stats,
         inventory,
         eventLog,
+        characterName,
+        characterDescription,
+        mainQuest,
+        sideQuests,
       });
 
       res.sendStatus(200);
@@ -198,27 +227,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Chat endpoint
   app.post("/api/chat", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-  
+
     try {
       const { message, context, gameState, gameId } = req.body;
-      
+
       // Si un gameId est fourni, on récupère l'état du jeu depuis la base
       let currentGameState = gameState;
       if (gameId) {
         const game = await storage.getGameById(gameId);
         if (game && game.game_state_id) {
-          const dbGameState = await storage.getGameStateByGameId(game.game_state_id);
+          const dbGameState = await storage.getGameStateByGameId(
+            game.game_state_id
+          );
           if (dbGameState) {
             currentGameState = {
               stats: dbGameState.stats,
               inventory: dbGameState.inventory,
-              eventLog: dbGameState.eventLog
+              eventLog: dbGameState.eventLog,
+              characterName: dbGameState.characterName,
+              characterDescription: dbGameState.characterDescription,
+              mainQuest: dbGameState.mainQuest,
+              sideQuests: dbGameState.sideQuests,
             };
           }
         }
       }
 
-      const response = await generateResponse(message, context, currentGameState);
+      const response = await generateResponse(
+        message,
+        context,
+        currentGameState
+      );
       res.json({ response });
     } catch (error) {
       console.error("Chat error:", error);

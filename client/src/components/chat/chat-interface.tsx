@@ -40,7 +40,8 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
   const handleResponse = async (response: string, currentState: any) => {
     // Extraire le message des balises <response>
     const messageMatch = response.match(/<response>([\s\S]*?)<\/response>/);
-    if (!messageMatch) return { cleanResponse: response, updates: currentState };
+    if (!messageMatch)
+      return { cleanResponse: response, updates: currentState };
 
     // Parser le contenu de la réponse
     const content = messageMatch[1];
@@ -52,7 +53,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     const updates = {
       stats: { ...currentState.stats },
       inventory: [...currentState.inventory],
-      eventLog: [...currentState.eventLog]
+      eventLog: [...currentState.eventLog],
     };
 
     if (healthMatch) updates.stats.health = parseInt(healthMatch[1]);
@@ -81,7 +82,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       const contextMessages = [...lastMessages, userMessage];
       const urlParams = new URLSearchParams(window.location.search);
       const gameId = urlParams.get("gameId");
-      
+
       let gameStateRes;
       if (gameId) {
         gameStateRes = await apiRequest("GET", `/api/game-state/${gameId}`);
@@ -92,18 +93,28 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       if (!gameStateRes.ok) throw new Error("Failed to fetch game state");
       const gameStateData = await gameStateRes.json();
 
+      // Envoyer tout l'état du jeu à l'API chat
       const res = await apiRequest("POST", "/api/chat", {
         message: input,
         context: contextMessages,
-        gameState: gameStateData,
-        gameId
+        gameState: {
+          ...gameStateData,
+          characterName: gameState.characterName,
+          characterDescription: gameState.characterDescription,
+          mainQuest: gameState.mainQuest,
+          sideQuests: gameState.sideQuests,
+        },
+        gameId,
       });
 
       if (!res.ok) throw new Error("Failed to get AI response");
 
       const data = await res.json();
-      const { cleanResponse, updates } = await handleResponse(data.response, gameStateData);
-      
+      const { cleanResponse, updates } = await handleResponse(
+        data.response,
+        gameStateData
+      );
+
       const assistantMessage: Message = {
         role: "assistant",
         content: cleanResponse,
@@ -117,7 +128,10 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       setMessages((prev) => [...prev, assistantMessage]);
 
       if (autoSave) {
-        await handleSaveConversation([...messages, userMessage, assistantMessage], true);
+        await handleSaveConversation(
+          [...messages, userMessage, assistantMessage],
+          true
+        );
       }
     } catch (error) {
       console.error("Failed to get AI response:", error);
@@ -136,11 +150,19 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     isAutoSave = false
   ) => {
     if (messagesToSave.length === 0) return;
-  
+
     try {
       const endpoint = "/api/game/save";
-      const { stats, inventory, eventLog } = gameState;
-      
+      const {
+        stats,
+        inventory,
+        eventLog,
+        characterName,
+        characterDescription,
+        mainQuest,
+        sideQuests,
+      } = gameState;
+
       const payload = {
         conversationId: currentGameId,
         conversation: {
@@ -151,25 +173,29 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
           stats,
           inventory,
           eventLog,
-        }
+          characterName,
+          characterDescription,
+          mainQuest,
+          sideQuests,
+        },
       };
-  
+
       const res = await apiRequest("POST", endpoint, payload);
-  
+
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.message || "Failed to save conversation");
       }
-  
+
       const savedGame = await res.json();
       if (!currentGameId && savedGame.id) {
         setCurrentGameId(savedGame.id);
         // Mettre à jour l'URL avec le nouveau gameId
         const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set('gameId', String(savedGame.id));
-        window.history.pushState({}, '', newUrl.toString());
+        newUrl.searchParams.set("gameId", String(savedGame.id));
+        window.history.pushState({}, "", newUrl.toString());
       }
-  
+
       if (!isAutoSave) {
         toast({
           title: t("success"),
@@ -237,7 +263,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
                   {message.role === "assistant" ? (
                     <AIMessage content={message.content} />
                   ) : (
-                    message.content.split('\n').map((text, i) => (
+                    message.content.split("\n").map((text, i) => (
                       <p key={i} className={i > 0 ? "mt-2" : ""}>
                         {text}
                       </p>
