@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { apiRequest } from '@/lib/queryClient';
 
-interface GameStats {
-  health: number;
-  mana: number;
-  level: number;
+export interface Stat {
+  name: string;
+  value: string | number;
+  config: {
+    type: 'progress' | 'number' | 'text';
+    max?: number;
+    color?: string;
+  };
 }
 
 interface GameState {
-  stats: GameStats;
+  stats: Stat[];
   inventory: string[];
   eventLog: string[];
   characterName: string;
@@ -16,7 +20,7 @@ interface GameState {
   mainQuest: {
     title: string;
     description: string;
-    status: 'active' | 'completed';
+    status: 'Not started' | 'active' | 'completed';
   };
   sideQuests: Array<{
     title: string;
@@ -27,11 +31,33 @@ interface GameState {
 
 export function useGameState() {
   const [gameState, setGameState] = useState<GameState>({
-    stats: {
-      health: 100,
-      mana: 100,
-      level: 1,
-    },
+    stats: [
+      {
+        name: "Santé",
+        value: 100,
+        config: {
+          type: "progress",
+          max: 100,
+          color: "#ef4444" // rouge par défaut
+        }
+      },
+      {
+        name: "Mana",
+        value: 100,
+        config: {
+          type: "progress",
+          max: 100,
+          color: "#3b82f6" // bleu par défaut
+        }
+      },
+      {
+        name: "Niveau",
+        value: 1,
+        config: {
+          type: "number"
+        }
+      }
+    ],
     inventory: [],
     eventLog: [],
     characterName: "",
@@ -39,7 +65,7 @@ export function useGameState() {
     mainQuest: {
       title: "",
       description: "",
-      status: "active"
+      status: "Not started"
     },
     sideQuests: []
   });
@@ -61,7 +87,20 @@ export function useGameState() {
 
       if (!res.ok) throw new Error("Failed to fetch game state");
       const data = await res.json();
-      setGameState(data);
+      // S'assurer que les stats ont des couleurs valides
+      const validatedStats = data.stats.map((stat: Stat) => {
+        if (stat.config.type === 'progress' && !stat.config.color) {
+          return {
+            ...stat,
+            config: {
+              ...stat.config,
+              color: '#3b82f6' // couleur par défaut si manquante
+            }
+          };
+        }
+        return stat;
+      });
+      setGameState({ ...data, stats: validatedStats });
     } catch (err) {
       console.error('Error fetching game state:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch game state');

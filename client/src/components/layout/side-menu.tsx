@@ -75,7 +75,7 @@ export function SideMenu() {
                     variant={location === item.href ? "secondary" : "ghost"}
                     className={cn(
                       "w-full justify-start gap-3 text-base py-6",
-                      location === item.href && "bg-secondary"
+                      location === item.href && "bg-secondary/60"
                     )}
                   >
                     <item.icon className="h-5 w-5" />

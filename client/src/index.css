@@ -2,7 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
+@layer base {  
+  :root {
+    --radius: 0.5rem;
+    --border-width: 1px;
+    --popover: 0 0% 100%;
+    }
+
+    .dark {
+      --popover: 0 0% 0%;
+    }
+
   * {
     @apply border-border;
   }
@@ -13,5 +23,46 @@
 
   .force-hover {
     background-color: rgba(128, 128, 128, 0.1);
+  }
+
+  input {
+    @apply bg-muted 
+    dark:bg-muted
+    bg-opacity-5
+    dark:bg-opacity-10
+    text-foreground 
+    border-[var(--border-width)]
+    border-input
+    rounded-[var(--radius)]
+    px-3 
+    py-2 
+    focus:outline-none 
+    focus:ring-2 
+    focus:ring-[hsl(var(--primary))] 
+    focus:border-[hsl(var(--primary))] 
+    focus:ring-opacity-20 
+    transition-all 
+    disabled:opacity-50 
+    disabled:cursor-not-allowed;
+  }
+
+  input[aria-invalid="true"] {
+    @apply border-destructive 
+    focus:ring-destructive 
+    focus:border-destructive;
+  }
+
+
+
+    
+
+  
+  
+  .rounded-themed {
+    border-radius: var(--radius);
+  }
+  
+  .border-themed {
+    border-width: var(--border-width);
   }
 }

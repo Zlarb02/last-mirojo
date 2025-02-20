@@ -1,19 +1,41 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useTranslation } from "react-i18next";
+import { useLocation } from "wouter";
+import { useHash } from "@/hooks/use-hash";
 import { SideMenu } from "@/components/layout/side-menu";
 import { Header } from "@/components/layout/header";
+import { SettingsNav } from "@/components/settings/settings-nav";
+import { AppearanceSettings } from "@/components/settings/appearance-settings";
+import { LanguageSettings } from "@/components/settings/language-settings";
+import { NotificationSettings } from "@/components/settings/notification-settings";
+import { SubscriptionSettings } from "@/components/settings/subscription-settings";
 
 export default function SettingsPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const [location] = useLocation();
+  
+  const hash = useHash();
+  const [section, subsection] = hash.split("-");
+
+  const renderSettingsContent = () => {
+    // Gestion des sous-sections
+    if (section === "appearance") {
+      return <AppearanceSettings section={subsection as 'theme' | 'colors' | 'style'} />;
+    }
+    
+    if (section === "subscription") {
+      return <SubscriptionSettings section={subsection as 'plan' | 'billing'} />;
+    }
+
+    // Sections principales
+    switch (section) {
+      case "language":
+        return <LanguageSettings />;
+      case "notifications":
+        return <NotificationSettings />;
+      default:
+        return <AppearanceSettings />;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -22,57 +44,17 @@ export default function SettingsPage() {
       <div className="flex-1 flex flex-col">
         <Header />
 
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <h1 className="text-2xl font-bold mb-6">
-            {t("settings.title", "Réglages")}
-          </h1>
-          <div className="space-y-4 max-w-2xl">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t("settings.language", "Langue")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Select
-                  defaultValue={i18n.language}
-                  onValueChange={(value) => i18n.changeLanguage(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={t(
-                        "settings.selectLanguage",
-                        "Sélectionner une langue"
-                      )}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fr">Français</SelectItem>
-                    <SelectItem value="en">English</SelectItem>
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {t("settings.notifications", "Notifications")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="game-notifications">
-                    {t("settings.gameNotifications", "Notifications de jeu")}
-                  </Label>
-                  <Switch id="game-notifications" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="sound-effects">
-                    {t("settings.soundEffects", "Effets sonores")}
-                  </Label>
-                  <Switch id="sound-effects" />
-                </div>
-              </CardContent>
-            </Card>
+        <main className="flex-1 flex">
+          <SettingsNav />
+          
+          <div className="flex-1 p-8">
+            <h1 className="text-2xl font-bold mb-6">
+              {t("settings.title", "Réglages")}
+            </h1>
+            
+            <div className="max-w-3xl">
+              {renderSettingsContent()}
+            </div>
           </div>
         </main>
       </div>

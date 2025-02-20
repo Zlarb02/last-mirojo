@@ -1,42 +1,31 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useTranslation } from "react-i18next";
-import { useGameState } from "@/hooks/use-game-state";
+import { useGameState, type Stat } from "@/hooks/use-game-state";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Activity,
-  Heart,
-  Atom,
-  Star,
-  User,
-  Book,
-  Backpack,
-} from "lucide-react";
+import { Activity, User, Book, Backpack, Trash2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StatDisplay } from "./stat-display";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface EditedState {
-  stats: {
-    health: number;
-    mana: number;
-    level: number;
-  };
+  stats: Stat[];
   characterName: string;
   characterDescription: string;
   mainQuest: {
     title: string;
     description: string;
-    status: "active" | "completed";
+    status: "Not started" | "active" | "completed";
   };
   sideQuests: Array<{
     title: string;
     description: string;
     status: "active" | "completed";
   }>;
-  inventory: string[]; // Ajout de l'inventaire
+  inventory: string[];
 }
 
 export function CharacterStats() {
@@ -45,11 +34,7 @@ export function CharacterStats() {
   const { gameState, updateGameState } = useGameState();
   const [isEditing, setIsEditing] = useState(false);
   const [editedStats, setEditedStats] = useState<EditedState>({
-    stats: {
-      health: gameState.stats.health,
-      mana: gameState.stats.mana,
-      level: gameState.stats.level,
-    },
+    stats: gameState.stats,
     characterName: gameState.characterName || "",
     characterDescription: gameState.characterDescription || "",
     mainQuest: gameState.mainQuest || {
@@ -58,16 +43,12 @@ export function CharacterStats() {
       status: "active",
     },
     sideQuests: gameState.sideQuests || [],
-    inventory: gameState.inventory || [], // Ajout de l'inventaire
+    inventory: gameState.inventory || [],
   });
 
   useEffect(() => {
     setEditedStats({
-      stats: {
-        health: gameState.stats.health,
-        mana: gameState.stats.mana,
-        level: gameState.stats.level,
-      },
+      stats: gameState.stats,
       characterName: gameState.characterName || "",
       characterDescription: gameState.characterDescription || "",
       mainQuest: gameState.mainQuest || {
@@ -76,7 +57,7 @@ export function CharacterStats() {
         status: "active",
       },
       sideQuests: gameState.sideQuests || [],
-      inventory: gameState.inventory || [], // Ajout de l'inventaire
+      inventory: gameState.inventory || [],
     });
   }, [gameState]);
 
@@ -105,15 +86,12 @@ export function CharacterStats() {
         status: "active",
       },
       sideQuests: gameState.sideQuests || [],
-      inventory: gameState.inventory || [], // Ajout de l'inventaire
+      inventory: gameState.inventory || [],
     });
   };
 
   const handleSave = async () => {
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const gameId = urlParams.get("gameId");
-
       if (!gameId) {
         toast({
           title: t("error"),
@@ -123,15 +101,7 @@ export function CharacterStats() {
         return;
       }
 
-      const success = await updateGameState(gameId, {
-        stats: editedStats.stats,
-        characterName: editedStats.characterName,
-        characterDescription: editedStats.characterDescription,
-        mainQuest: editedStats.mainQuest,
-        sideQuests: editedStats.sideQuests,
-        inventory: editedStats.inventory, // Assurez-vous que l'inventaire est inclus
-        eventLog: gameState.eventLog,
-      });
+      const success = await updateGameState(gameId, editedStats);
 
       if (success) {
         setIsEditing(false);
@@ -149,16 +119,25 @@ export function CharacterStats() {
       });
     }
   };
-  let number: number = 50;
+
+  const handleAddStat = () => {
+    setEditedStats({
+      ...editedStats,
+      stats: [...editedStats.stats, {
+        name: t("game.stats.newStat"),
+        value: 0,
+        config: {
+          type: "number",
+          color: "#3b82f6", // Toujours fournir une couleur par défaut
+          max: 100
+        }
+      }]
+    });
+  };
+
   return (
     <Tabs defaultValue="stats" className="space-y-4">
       <TabsList className="grid w-full grid-cols-4 gap-4 bg-background p-1">
-        <TabsTrigger
-          value="stats"
-          className="transition-all data-[state=active]:scale-150"
-        >
-          <Activity className="h-4 w-4 transition-all data-[state=active]:text-primary" />
-        </TabsTrigger>
         <TabsTrigger
           value="character"
           className="transition-all data-[state=active]:scale-150"
@@ -166,16 +145,22 @@ export function CharacterStats() {
           <User className="h-4 w-4 transition-all data-[state=active]:text-primary" />
         </TabsTrigger>
         <TabsTrigger
-          value="quests"
+          value="stats"
           className="transition-all data-[state=active]:scale-150"
         >
-          <Book className="h-4 w-4 transition-all data-[state=active]:text-primary" />
+          <Activity className="h-4 w-4 transition-all data-[state=active]:text-primary" />
         </TabsTrigger>
         <TabsTrigger
           value="inventory"
           className="transition-all data-[state=active]:scale-150"
         >
           <Backpack className="h-4 w-4 transition-all data-[state=active]:text-primary" />
+        </TabsTrigger>
+        <TabsTrigger
+          value="quests"
+          className="transition-all data-[state=active]:scale-150"
+        >
+          <Book className="h-4 w-4 transition-all data-[state=active]:text-primary" />
         </TabsTrigger>
       </TabsList>
 
@@ -200,113 +185,122 @@ export function CharacterStats() {
                 </Button>
               </div>
             )}
+            {isEditing && (
+              <Button onClick={handleAddStat} variant="outline">
+                {t("game.stats.addStat")}
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 text-red-500" />
-                  <span>{t("game.stats.health")}</span>
-                </div>
+            {editedStats.stats.map((stat, index) => (
+              <div key={index} className="space-y-2">
                 {isEditing ? (
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={editedStats.stats.health}
-                    onChange={(e) =>
-                      setEditedStats({
-                        ...editedStats,
-                        stats: {
-                          ...editedStats.stats,
-                          health: Math.min(
-                            100,
-                            Math.max(0, parseInt(e.target.value) || 0)
-                          ),
-                        },
-                      })
-                    }
-                    className="w-20 h-6 text-right"
-                  />
+                  <div className="space-y-2 p-4 border rounded-lg">
+                    <div className="flex justify-between items-center">
+                      <Input
+                        value={stat.name}
+                        onChange={(e) => {
+                          const newStats = [...editedStats.stats];
+                          newStats[index] = { ...stat, name: e.target.value };
+                          setEditedStats({ ...editedStats, stats: newStats });
+                        }}
+                        placeholder={t("game.stats.statName")}
+                        className="flex-1 mr-2"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const newStats = editedStats.stats.filter((_, i) => i !== index);
+                          setEditedStats({ ...editedStats, stats: newStats });
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    <Select
+                      value={stat.config.type}
+                      onValueChange={(value: 'progress' | 'number' | 'text') => {
+                        const newStats = [...editedStats.stats];
+                        newStats[index] = {
+                          ...stat,
+                          config: { 
+                            ...stat.config, 
+                            type: value,
+                            max: value === 'progress' ? 100 : undefined,
+                            color: value === 'progress' ? '#000000' : undefined
+                          }
+                        };
+                        setEditedStats({ ...editedStats, stats: newStats });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t("game.stats.type")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="progress">{t("game.stats.typeProgress")}</SelectItem>
+                        <SelectItem value="number">{t("game.stats.typeNumber")}</SelectItem>
+                        <SelectItem value="text">{t("game.stats.typeText")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {stat.config.type === 'progress' && (
+                      <div className="space-y-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          value={stat.config.max}
+                          onChange={(e) => {
+                            const newStats = [...editedStats.stats];
+                            newStats[index] = {
+                              ...stat,
+                              config: { ...stat.config, max: Number(e.target.value) }
+                            };
+                            setEditedStats({ ...editedStats, stats: newStats });
+                          }}
+                          placeholder={t("game.stats.maxValue")}
+                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{t("game.stats.color")}:</span>
+                          <Input
+                            type="color"
+                            value={stat.config.color}
+                            onChange={(e) => {
+                              const newStats = [...editedStats.stats];
+                              newStats[index] = {
+                                ...stat,
+                                config: { ...stat.config, color: e.target.value }
+                              };
+                              setEditedStats({ ...editedStats, stats: newStats });
+                            }}
+                            className="w-20 h-8 p-1"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <Input
+                      type={stat.config.type === 'number' ? 'number' : 'text'}
+                      value={stat.value}
+                      onChange={(e) => {
+                        const newStats = [...editedStats.stats];
+                        newStats[index] = {
+                          ...stat,
+                          value: stat.config.type === 'number' 
+                            ? Number(e.target.value)
+                            : e.target.value
+                        };
+                        setEditedStats({ ...editedStats, stats: newStats });
+                      }}
+                      placeholder={t("game.stats.value")}
+                    />
+                  </div>
                 ) : (
-                  <span>{gameState.stats.health}/100</span>
+                  <StatDisplay stat={stat} />
                 )}
               </div>
-              <Progress
-                value={
-                  isEditing ? editedStats.stats.health : gameState.stats.health
-                }
-                className="h-2 bg-red-100"
-                indicatorClassName="bg-red-500"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <div className="flex items-center gap-2">
-                  <Atom className="h-4 w-4 text-blue-500" />
-                  <span>{t("game.stats.mana")}</span>
-                </div>
-                {isEditing ? (
-                  <Input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={editedStats.stats.mana}
-                    onChange={(e) =>
-                      setEditedStats({
-                        ...editedStats,
-                        stats: {
-                          ...editedStats.stats,
-                          mana: Math.min(
-                            100,
-                            Math.max(0, parseInt(e.target.value) || 0)
-                          ),
-                        },
-                      })
-                    }
-                    className="w-20 h-6 text-right"
-                  />
-                ) : (
-                  <span>{gameState.stats.mana}/100</span>
-                )}
-              </div>
-              <Progress
-                value={
-                  isEditing ? editedStats.stats.mana : gameState.stats.mana
-                }
-                className="h-2 bg-blue-100"
-                indicatorClassName="bg-blue-500"
-              />
-            </div>
-
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Star className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm">{t("game.stats.level")}</span>
-              </div>
-              {isEditing ? (
-                <Input
-                  type="number"
-                  min="1"
-                  value={editedStats.stats.level}
-                  onChange={(e) =>
-                    setEditedStats({
-                      ...editedStats,
-                      stats: {
-                        ...editedStats.stats,
-                        level: Math.max(1, parseInt(e.target.value) || 1),
-                      },
-                    })
-                  }
-                  className="w-20 h-6 text-right"
-                />
-              ) : (
-                <span className="text-2xl font-bold">
-                  {gameState.stats.level}
-                </span>
-              )}
-            </div>
+            ))}
           </CardContent>
         </Card>
       </TabsContent>
@@ -335,7 +329,7 @@ export function CharacterStats() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Nom du personnage</label>
+              <label className="text-sm font-medium">{t("game.character.name")}</label>
               {isEditing ? (
                 <Input
                   value={editedStats.characterName}
@@ -345,16 +339,16 @@ export function CharacterStats() {
                       characterName: e.target.value,
                     })
                   }
-                  placeholder="Nom du personnage"
+                  placeholder={t("game.character.name")}
                 />
               ) : (
                 <p className="text-sm">
-                  {gameState.characterName || "Sans nom"}
+                  {gameState.characterName || t("game.character.noName")}
                 </p>
               )}
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
+              <label className="text-sm font-medium">{t("game.character.description")}</label>
               {isEditing ? (
                 <Textarea
                   value={editedStats.characterDescription}
@@ -364,11 +358,11 @@ export function CharacterStats() {
                       characterDescription: e.target.value,
                     })
                   }
-                  placeholder="Description du personnage"
+                  placeholder={t("game.character.description")}
                 />
               ) : (
                 <p className="text-sm">
-                  {gameState.characterDescription || "Aucune description"}
+                  {gameState.characterDescription || t("game.character.noDescription")}
                 </p>
               )}
             </div>
@@ -400,7 +394,7 @@ export function CharacterStats() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <h3 className="font-medium">Quête principale</h3>
+              <h3 className="font-medium">{t("game.quests.mainQuest")}</h3>
               {isEditing ? (
                 <div className="space-y-2">
                   <Input
@@ -414,7 +408,7 @@ export function CharacterStats() {
                         },
                       })
                     }
-                    placeholder="Titre de la quête"
+                    placeholder={t("game.quests.questTitle")}
                   />
                   <Textarea
                     value={editedStats.mainQuest.description}
@@ -427,13 +421,13 @@ export function CharacterStats() {
                         },
                       })
                     }
-                    placeholder="Description de la quête"
+                    placeholder={t("game.quests.questDescription")}
                   />
                 </div>
               ) : (
                 <div className="rounded-lg bg-muted p-4">
                   <h4 className="font-medium">
-                    {gameState.mainQuest?.title || "Aucune quête"}
+                    {gameState.mainQuest?.title || t("game.quests.noQuest")}
                   </h4>
                   <p className="text-sm mt-2">
                     {gameState.mainQuest?.description}
@@ -472,7 +466,7 @@ export function CharacterStats() {
               {isEditing && (
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Nouvel item"
+                    placeholder={t("game.inventory.newItem")}
                     onKeyPress={(e) => {
                       if (e.key === "Enter") {
                         const input = e.currentTarget;
@@ -506,7 +500,7 @@ export function CharacterStats() {
                       }
                     }}
                   >
-                    Ajouter
+                    {t("game.inventory.add")}
                   </Button>
                 </div>
               )}
@@ -548,7 +542,7 @@ export function CharacterStats() {
                             }}
                             className="text-destructive hover:text-destructive"
                           >
-                            Supprimer
+                            {t("common.delete")}
                           </Button>
                         </div>
                       )}
@@ -558,7 +552,7 @@ export function CharacterStats() {
                 {(isEditing ? editedStats.inventory : gameState.inventory)
                   .length === 0 && (
                   <p className="text-sm text-muted-foreground">
-                    Inventaire vide
+                    {t("game.inventory.empty")}
                   </p>
                 )}
               </div>

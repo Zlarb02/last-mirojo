@@ -1,13 +1,14 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { StatDisplay } from "../game/stat-display";
 
 interface GameStats {
-  health: string;
-  mana: string;
-  level: string;
+  name: string;
+  value: string;
+  config: any;
 }
 
 interface ParsedResponse {
-  stats: GameStats;
+  stats: GameStats[];
   inventory: string[];
   eventLog: string[];
   message: string;
@@ -35,11 +36,6 @@ function parseAIResponse(content: string): ParsedResponse {
   const message = getTagContent('message');
 
   // Extraire les stats
-  const stats = {
-    health: getTagContent('health'),
-    mana: getTagContent('mana'),
-    level: getTagContent('level'),
-  };
 
   // Extraire l'inventaire et les événements
   const extractNumberedItems = (baseTag: string): string[] => {
@@ -54,6 +50,12 @@ function parseAIResponse(content: string): ParsedResponse {
     return items;
   };
 
+  const stats = extractNumberedItems('stat').map(stat => ({
+    name: getTagContent(`stat${stat}/name`),
+    value: getTagContent(`stat${stat}/value`),
+    config: JSON.parse(getTagContent(`stat${stat}/config`))
+  }));
+  
   const characterName = getTagContent('characterName');
   const characterDescription = getTagContent('characterDescription');
   const mainQuest = {
@@ -91,7 +93,6 @@ export function AIMessage({ content }: { content: string }) {
     }
 
     const parsed = parseAIResponse(responseMatch[1]);
-    const hasStats = parsed.stats.health || parsed.stats.mana || parsed.stats.level;
 
     return (
       <div className="space-y-4">
@@ -103,17 +104,11 @@ export function AIMessage({ content }: { content: string }) {
             )}
           </div>
         )}
-        {hasStats && (
-          <div className="flex gap-4 text-sm text-muted-foreground">
-            {parsed.stats.health && (
-              <div>♥️ Santé: {parsed.stats.health}</div>
-            )}
-            {parsed.stats.mana && (
-              <div>🔮 Mana: {parsed.stats.mana}</div>
-            )}
-            {parsed.stats.level && (
-              <div>⭐ Niveau: {parsed.stats.level}</div>
-            )}
+        {parsed.stats.length > 0 && (
+          <div className="space-y-2">
+            {parsed.stats.map((stat, index) => (
+              <StatDisplay key={index} stat={stat} />
+            ))}
           </div>
         )}
         {parsed.mainQuest?.title && (

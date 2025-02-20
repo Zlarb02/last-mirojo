@@ -18,10 +18,26 @@ export const users = pgTable("users", {
   language: text("language").default("en"),
 });
 
+export interface StatConfig {
+  type: 'progress' | 'number' | 'text';
+  max?: number;
+  color?: string;
+}
+
+export interface Stat {
+  name: string;
+  value: string | number;
+  config: {
+    type: 'progress' | 'number' | 'text';
+    max?: number;
+    color?: string;
+  };
+}
+
 export const gameStates = pgTable("game_states", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
-  stats: jsonb("stats").notNull(),
+  stats: jsonb("stats").notNull().$type<Stat[]>(),
   inventory: jsonb("inventory").notNull(),
   eventLog: jsonb("event_log").notNull(),
   savedAt: text("saved_at").notNull(),
