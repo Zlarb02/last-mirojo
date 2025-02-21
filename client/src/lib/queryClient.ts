@@ -1,26 +1,42 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-async function throwIfResNotOk(res: Response) {
+function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    return res.json().then(data => {
+      throw new Error(`${res.status}: ${JSON.stringify(data)}`);
+    });
   }
+  return res;
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  const res = await fetch(url, {
+export async function apiRequest(method: string, endpoint: string, body?: any) {
+  const response = await fetch(endpoint, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    credentials: 'include'
   });
 
-  await throwIfResNotOk(res);
-  return res;
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  // Pour les réponses 204 No Content, retourner true
+  if (response.status === 204) {
+    return true;
+  }
+
+  // Pour les réponses qui pourraient être du texte brut
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    return response.json();
+  }
+
+  // Pour les réponses texte
+  return response.text();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -46,8 +62,8 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      refetchOnWindowFocus: true, // Permettre le rafraîchissement au focus
+      staleTime: 1000 * 60, // Considérer les données comme périmées après 1 minute
       retry: false,
     },
     mutations: {

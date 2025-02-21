@@ -25,35 +25,54 @@ import { Loader2, Trash2 } from "lucide-react";
 import { navigate } from "wouter/use-browser-location";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function MyGamesPage() {
   const { t } = useTranslation();
   const { games, isLoading, error, refetch } = useGames();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleDeleteGame = async (gameId: number) => {
-    try {
-      const res = await apiRequest("DELETE", `/api/games/${gameId}`);
-      if (!res.ok) throw new Error("Failed to delete game");
-
-      await refetch();
+  const deleteMutation = useMutation({
+    mutationFn: async (gameId: string) => {
+      await apiRequest("DELETE", `/api/games/${gameId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["games"] });
       toast({
         title: t("success"),
         description: t("myGames.deleted"),
       });
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error("Failed to delete game:", error);
       toast({
         title: t("error"),
         description: t("myGames.deleteFailed"),
         variant: "destructive",
       });
-    }
+    },
+  });
+
+  const handleDeleteGame = async (gameId: string) => {
+    deleteMutation.mutate(gameId);
   };
 
-  function formatDateTime(dateString: string) {
+  function formatDateTime(dateString: string | Date | undefined | null) {
+    if (!dateString) {
+      return t("myGames.invalidDate");
+    }
+
     try {
+      // Convert the timestamp to a Date object
       const date = new Date(dateString);
+        
+      // Return early if invalid date
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date received:', dateString);
+        return t("myGames.invalidDate");
+      }
+
       return new Intl.DateTimeFormat("fr-FR", {
         year: "numeric",
         month: "long",
@@ -63,7 +82,7 @@ export default function MyGamesPage() {
       }).format(date);
     } catch (error) {
       console.error("Error formatting date:", error);
-      return "Date invalide";
+      return t("myGames.invalidDate");
     }
   }
 
@@ -95,25 +114,27 @@ export default function MyGamesPage() {
               <Card key={game.id}>
                 <CardHeader>
                   <CardTitle>
-                    {t("myGames.savedGame", "Partie sauvegardée")}
+                    {game.name || t("myGames.untitledGame", "Partie sans nom")}
                   </CardTitle>
-                  <CardDescription className="space-y-1">
-                    <p>
-                      {t("myGames.created", "Créée le")}{" "}
-                      {formatDateTime(game.created_at)}
-                    </p>
-                    <p>
-                      {t("myGames.lastPlayed", "Dernière modification le")}{" "}
-                      {formatDateTime(game.updated_at)}
-                    </p>
+                  <CardDescription>
+                    <span className="block space-y-1">
+                      <span className="block">
+                        {t("myGames.created", "Créée le")}{" "}
+                        {formatDateTime(game.createdAt)}
+                      </span>
+                      <span className="block">
+                        {t("myGames.lastPlayed", "Dernière modification le")}{" "}
+                        {formatDateTime(game.updatedAt)}
+                      </span>
+                    </span>
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="mb-4 text-sm text-muted-foreground line-clamp-2">
+                <CardContent className="space-y-4">
+                  <div className="text-sm text-muted-foreground line-clamp-2">
                     {game.conversation.messages[
                       game.conversation.messages.length - 1
                     ]?.content || t("myGames.noMessages")}
-                  </p>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"

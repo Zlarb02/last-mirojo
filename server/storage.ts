@@ -78,6 +78,8 @@ export class DatabaseStorage implements IStorage {
 
   async saveGame(data: {
     user_id: string;
+    name: string;  // S'assurer que le name est utilisé
+    description: string;
     conversation: { messages: Message[]; timestamp: string };
     gameState?: Partial<GameState>;
   }) {
@@ -110,9 +112,11 @@ export class DatabaseStorage implements IStorage {
         throw new Error("Failed to create game state");
       }
 
-      // Create new game with proper conversation format
+      // Create new game with proper conversation format and name
       const gameData = {
         userId: data.user_id,
+        name: data.name, // Ajouter le nom
+        description: data.description,
         gameStateId: gameState.id,
         conversation: {
           messages: data.conversation.messages || [],
@@ -187,15 +191,18 @@ export class DatabaseStorage implements IStorage {
       .where(eq(gameStates.id, gameStateId));
   }
 
+  // Modifier la méthode getUserGames pour inclure le nom
   async getUserGames(userId: string): Promise<Game[]> {
     const results = await db
       .select({
         id: gamesTable.id,
-        userId: gamesTable.userId, // Changed from user_id
-        gameStateId: gamesTable.gameStateId, // Changed from game_state_id
+        userId: gamesTable.userId,
+        gameStateId: gamesTable.gameStateId,
+        name: gamesTable.name, // Ajouter le champ name
+        description: gamesTable.description, // Ajouter le champ description
         conversation: gamesTable.conversation,
-        createdAt: gamesTable.createdAt, // Changed from created_at
-        updatedAt: gamesTable.updatedAt, // Changed from updated_at
+        createdAt: gamesTable.createdAt,
+        updatedAt: gamesTable.updatedAt,
       })
       .from(gamesTable)
       .leftJoin(gameStates, eq(gamesTable.gameStateId, gameStates.id))
@@ -231,6 +238,8 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: gamesTable.id,
         userId: gamesTable.userId,
+        name: gamesTable.name, // Ajouter le nom
+        description: gamesTable.description, // Ajouter la description
         gameStateId: gamesTable.gameStateId,
         conversation: gamesTable.conversation,
         createdAt: gamesTable.createdAt,
@@ -285,6 +294,8 @@ export class DatabaseStorage implements IStorage {
 
     return {
       id: updatedGame.id,
+      name: updatedGame.name, // Ajouter le nom
+      description: updatedGame.description, // Ajouter la description
       userId: updatedGame.userId,
       gameStateId: updatedGame.gameStateId,
       conversation: updatedGame.conversation,

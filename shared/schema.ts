@@ -61,6 +61,8 @@ export const games = pgTable("games", {
   gameStateId: uuid("game_state_id").references(() => gameStates.id, {
     onDelete: "cascade",
   }),
+  name: text("name").default('').notNull(), // Ajout du champ name
+  description: text("description").default(''), // Ajout du champ description
   conversation: jsonb("conversation").$type<{ messages: Message[]; timestamp: string }>().notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

@@ -1,3 +1,5 @@
+import { c } from "node_modules/vite/dist/node/types.d-aGj9QkWt";
+
 export default {
   translation: {
     app: {
@@ -48,7 +50,9 @@ export default {
         save: "Sauvegarder la conversation",
         failed: "Échec de la réponse IA",
         saved: "Conversation sauvegardée avec succès",
-        saveFailed: "Échec de la sauvegarde de la conversation"
+        saveFailed: "Échec de la sauvegarde de la conversation",
+        autoSaveOn: "Sauvegarde automatique activée",
+        autoSaveOff: "Sauvegarde automatique désactivée",
       },
       character: {
         title: "Personnage",
@@ -74,7 +78,13 @@ export default {
         empty: "Inventaire vide",
         add: "Ajouter",
         newItem: "Nouvel objet"
-      }
+      },
+      newGame: "Créer une nouvelle partie",
+      enterGameName: "Entrez le nom de votre partie...",
+      start: "Commencer",
+      confirmTitle: "Confirmation",
+      confirmNewGame: "Voulez-vous créer une partie nommée « {{name}} » ?",
+      createFailed: "Échec de la création de la partie",
     },
     navigation: {
       menu: "Menu",
@@ -172,7 +182,8 @@ export default {
       delete: "Supprimer",
       success: "Succès",
       error: "Erreur",
-      save: "Sauvegarder"
+      save: "Sauvegarder",
+      confirm: "Confirmer",
     },
     theme: {
       title: "Apparence",

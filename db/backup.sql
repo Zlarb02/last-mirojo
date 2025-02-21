@@ -49,7 +49,7 @@ CREATE TABLE public.game_states (
     character_name text,
     character_description text,
     main_quest jsonb,
-    side_quests jsonb[]
+    side_quests jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -63,7 +63,9 @@ CREATE TABLE public.games (
     game_state_id uuid NOT NULL,
     conversation jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    name text DEFAULT ''::text,
+    description text
 );
 
 
@@ -110,6 +112,10 @@ CREATE TABLE public.users (
 --
 
 COPY public.game_states (id, user_id, stats, inventory, event_log, saved_at, character_name, character_description, main_quest, side_quests) FROM stdin;
+3a163466-2c2a-4609-87fb-eb4f1197629a	f7ea2127-8cc7-4d80-a22f-db8318493b7e	{"0": {"name": "Santé", "value": 100, "config": {"max": 100, "type": "progress", "color": "#ef4444"}}, "1": {"name": "Mana", "value": 100, "config": {"max": 100, "type": "progress", "color": "#3b82f6"}}, "2": {"name": "Niveau", "value": 1, "config": {"type": "number"}}, "mana": 0, "level": 0, "health": 0}	[]	[]	2025-02-21T13:06:17.412Z	pogo		{"title": "", "status": "Not started", "description": ""}	[]
+062bd9e7-0341-41d6-9701-984b0fb8933f	f7ea2127-8cc7-4d80-a22f-db8318493b7e	[{"name": "Santé", "value": 100, "config": {"max": 100, "type": "progress", "color": "#ef4444"}}, {"name": "Mana", "value": 100, "config": {"max": 100, "type": "progress", "color": "#3b82f6"}}, {"name": "Niveau", "value": 1, "config": {"type": "number"}}]	[]	[]	2025-02-21T13:06:27.628Z			{"title": "", "status": "Not started", "description": ""}	[]
+ae30437a-495e-4caf-91a6-84ab8ed41c43	f7ea2127-8cc7-4d80-a22f-db8318493b7e	{"0": {"name": "Santé", "value": 100, "config": {"max": 100, "type": "progress", "color": "#ef4444"}}, "1": {"name": "Mana", "value": 100, "config": {"max": 100, "type": "progress", "color": "#3b82f6"}}, "2": {"name": "Niveau", "value": 1, "config": {"type": "number"}}, "mana": 0, "level": 0, "health": 0}	[]	[]	2025-02-21T13:06:45.194Z			{"title": "", "status": "Not started", "description": ""}	[]
+c0accfea-9de8-451f-a9a8-98cc609093c9	f7ea2127-8cc7-4d80-a22f-db8318493b7e	[{"name": "Santé", "value": 100, "config": {"max": 100, "type": "progress", "color": "#ef4444"}}, {"name": "Mana", "value": 100, "config": {"max": 100, "type": "progress", "color": "#3b82f6"}}, {"name": "Niveau", "value": 1, "config": {"type": "number"}}]	[]	[]	2025-02-21T13:07:31.781Z	pogo		{"title": "", "status": "Not started", "description": ""}	[]
 \.
 
 
@@ -117,7 +123,11 @@ COPY public.game_states (id, user_id, stats, inventory, event_log, saved_at, cha
 -- Data for Name: games; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.games (id, user_id, game_state_id, conversation, created_at, updated_at) FROM stdin;
+COPY public.games (id, user_id, game_state_id, conversation, created_at, updated_at, name, description) FROM stdin;
+dcf5bea4-8b5b-4db7-900a-9c71a976b912	f7ea2127-8cc7-4d80-a22f-db8318493b7e	3a163466-2c2a-4609-87fb-eb4f1197629a	{"messages": [], "timestamp": "2025-02-21T13:05:38.913Z"}	2025-02-21 13:05:31.254224+00	2025-02-21 13:05:31.254224+00		\N
+b9b2e5e8-9502-4192-84fb-c512f99fc303	f7ea2127-8cc7-4d80-a22f-db8318493b7e	c0accfea-9de8-451f-a9a8-98cc609093c9	{"messages": [{"role": "user", "content": "hello", "timestamp": "2025-02-21T13:06:16.682Z"}, {"role": "assistant", "content": "<response>\\n  <stats>\\n    <health>0</health>\\n    <mana>0</mana>\\n    <level>0</level>\\n  </stats>\\n  <inventory>\\n    <item1></item1>\\n    <item2></item2>\\n  </inventory>\\n  <eventLog>\\n    <event1></event1>\\n    <event2></event2>\\n  </eventLog>\\n  <message>Bonjour ! Il semble que tu n'as pas encore commencé ton aventure. Veux-tu initialiser ta partie et sauvegarder pour commencer ?</message>\\n</response>", "timestamp": "2025-02-21T13:06:17.318Z"}], "timestamp": "2025-02-21T13:06:17.444Z"}	2025-02-21 13:06:09.902279+00	2025-02-21 13:06:09.902279+00		\N
+3dcc61dc-23b7-4160-8bad-d361b38afd30	f7ea2127-8cc7-4d80-a22f-db8318493b7e	062bd9e7-0341-41d6-9701-984b0fb8933f	{"messages": [{"role": "user", "content": "hello", "timestamp": "2025-02-21T13:06:16.682Z"}, {"role": "assistant", "content": "<response>\\n  <stats>\\n    <health>0</health>\\n    <mana>0</mana>\\n    <level>0</level>\\n  </stats>\\n  <inventory>\\n    <item1></item1>\\n    <item2></item2>\\n  </inventory>\\n  <eventLog>\\n    <event1></event1>\\n    <event2></event2>\\n  </eventLog>\\n  <message>Bonjour ! Il semble que tu n'as pas encore commencé ton aventure. Veux-tu initialiser ta partie et sauvegarder pour commencer ?</message>\\n</response>", "timestamp": "2025-02-21T13:06:17.318Z"}, {"role": "user", "content": "je n'ai pas de nom ?", "timestamp": "2025-02-21T13:06:26.761Z"}, {"role": "assistant", "content": "<response>\\n  <stats>\\n    <health>0</health>\\n    <mana>0</mana>\\n    <level>0</level>\\n  </stats>\\n  <inventory>\\n    <item1></item1>\\n    <item2></item2>\\n  </inventory>\\n  <eventLog>\\n    <event1></event1>\\n    <event2></event2>\\n  </eventLog>\\n  <message>C'est exact, il semble que tu n'aies pas encore de nom. Souhaiterais-tu en choisir un avant de commencer ton aventure ?</message>\\n</response>", "timestamp": "2025-02-21T13:06:27.451Z"}], "timestamp": "2025-02-21T13:06:27.565Z"}	2025-02-21 13:06:19.916018+00	2025-02-21 13:06:19.916018+00		\N
+b7528a0f-3b2c-40d7-bc30-f7265e7f14b4	f7ea2127-8cc7-4d80-a22f-db8318493b7e	ae30437a-495e-4caf-91a6-84ab8ed41c43	{"messages": [{"role": "user", "content": "hello", "timestamp": "2025-02-21T13:06:16.682Z"}, {"role": "assistant", "content": "<response>\\n  <stats>\\n    <health>0</health>\\n    <mana>0</mana>\\n    <level>0</level>\\n  </stats>\\n  <inventory>\\n    <item1></item1>\\n    <item2></item2>\\n  </inventory>\\n  <eventLog>\\n    <event1></event1>\\n    <event2></event2>\\n  </eventLog>\\n  <message>Bonjour ! Il semble que tu n'as pas encore commencé ton aventure. Veux-tu initialiser ta partie et sauvegarder pour commencer ?</message>\\n</response>", "timestamp": "2025-02-21T13:06:17.318Z"}, {"role": "user", "content": "je n'ai pas de nom ?", "timestamp": "2025-02-21T13:06:26.761Z"}, {"role": "assistant", "content": "<response>\\n  <stats>\\n    <health>0</health>\\n    <mana>0</mana>\\n    <level>0</level>\\n  </stats>\\n  <inventory>\\n    <item1></item1>\\n    <item2></item2>\\n  </inventory>\\n  <eventLog>\\n    <event1></event1>\\n    <event2></event2>\\n  </eventLog>\\n  <message>C'est exact, il semble que tu n'aies pas encore de nom. Souhaiterais-tu en choisir un avant de commencer ton aventure ?</message>\\n</response>", "timestamp": "2025-02-21T13:06:27.451Z"}, {"role": "user", "content": "normalement c'est bon mtn", "timestamp": "2025-02-21T13:06:43.985Z"}, {"role": "assistant", "content": "<response>\\n  <stats>\\n    <health>0</health>\\n    <mana>0</mana>\\n    <level>0</level>\\n  </stats>\\n  <inventory>\\n    <item1></item1>\\n    <item2></item2>\\n  </inventory>\\n  <eventLog>\\n    <event1></event1>\\n    <event2></event2>\\n  </eventLog>\\n  <message>Bienvenue dans ton aventure, <nom> ! Il semble que tu n'aies pas encore de quête principale. Souhaiterais-tu en démarrer une ?</message>\\n</response>", "timestamp": "2025-02-21T13:06:44.953Z"}], "timestamp": "2025-02-21T13:06:45.072Z"}	2025-02-21 13:06:37.484656+00	2025-02-21 13:06:37.484656+00		\N
 \.
 
 
@@ -126,7 +136,7 @@ COPY public.games (id, user_id, game_state_id, conversation, created_at, updated
 --
 
 COPY public.session (sid, sess, expire) FROM stdin;
-8ssS10yuQHoJTk7im54jWsDLJWrhsqr1	{"cookie":{"originalMaxAge":null,"expires":null,"httpOnly":true,"path":"/"},"passport":{"user":"f7ea2127-8cc7-4d80-a22f-db8318493b7e"}}	2025-02-22 09:16:32
+ihE31Ma62C_MIhOs9EFOroyh5eleykql	{"cookie":{"originalMaxAge":null,"expires":null,"httpOnly":true,"path":"/"},"passport":{"user":"f7ea2127-8cc7-4d80-a22f-db8318493b7e"}}	2025-02-22 13:08:14
 \.
 
 

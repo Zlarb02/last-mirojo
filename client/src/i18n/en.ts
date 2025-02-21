@@ -47,7 +47,9 @@ export default {
         save: "Save conversation",
         failed: "Failed to get AI response",
         saved: "Conversation saved successfully",
-        saveFailed: "Failed to save conversation"
+        saveFailed: "Failed to save conversation",
+        autoSaveOn: "Auto-save enabled",
+        autoSaveOff: "Auto-save disabled",
       },
       character: {
         title: "Character",
@@ -73,7 +75,13 @@ export default {
         empty: "Empty inventory",
         add: "Add",
         newItem: "New item"
-      }
+      },
+      newGame: "New game",
+      enterGameName: "Enter game name",
+      start: "Start",
+      confirmTitle: "Create new game",
+      confirmNewGame: "Do you want to create a new game named « {{name}} » ?",
+      createFailed: "Failed to create new game"
     },
     navigation: {
       menu: "Menu",
@@ -173,7 +181,8 @@ export default {
       delete: "Delete",
       success: "Success",
       error: "Error",
-      save: "Save"
+      save: "Save",
+      confirm: "Confirm",
     },
     theme: {
       title: "Appearance",

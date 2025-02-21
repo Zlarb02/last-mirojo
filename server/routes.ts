@@ -14,7 +14,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const { conversation, gameState } = req.body;
+      const { conversation, gameState, name, description } = req.body;
 
       if (!conversation || !conversation.messages) {
         return res.status(400).json({ error: "Invalid conversation data" });
@@ -30,6 +30,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...gameState,
           userId,
         } : undefined,
+        name: name,
+        description: description,
       });
 
       res.json(savedGame);

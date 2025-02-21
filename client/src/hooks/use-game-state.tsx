@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiRequest } from '@/lib/queryClient';
+import { SavedConversation } from '@/types/chat';
 
 export interface Stat {
   name: string;
@@ -78,32 +79,47 @@ export function useGameState() {
       const urlParams = new URLSearchParams(window.location.search);
       const gameId = urlParams.get("gameId");
       
-      let res;
-      if (gameId) {
-        res = await apiRequest("GET", `/api/game-state/${gameId}`);
-      } else {
-        return; // Don't fetch if no gameId
+      if (!gameId) {
+        // Si pas de gameId, on garde l'état par défaut
+        setIsLoading(false);
+        return;
       }
 
-      if (!res.ok) throw new Error("Failed to fetch game state");
-      const data = await res.json();
-      // S'assurer que les stats ont des couleurs valides
-      const validatedStats = data.stats.map((stat: Stat) => {
-        if (stat.config.type === 'progress' && !stat.config.color) {
-          return {
-            ...stat,
-            config: {
-              ...stat.config,
-              color: '#3b82f6' // couleur par défaut si manquante
-            }
-          };
-        }
-        return stat;
-      });
-      setGameState({ ...data, stats: validatedStats });
+      try {
+        const data = await apiRequest("GET", `/api/game-state/${gameId}`);
+        
+        // Ensure data has required properties
+        const validatedData = {
+          stats: Array.isArray(data.stats) ? data.stats : gameState.stats,
+          inventory: Array.isArray(data.inventory) ? data.inventory : [],
+          eventLog: Array.isArray(data.eventLog) ? data.eventLog : [],
+          characterName: data.characterName || "",
+          characterDescription: data.characterDescription || "",
+          mainQuest: data.mainQuest || {
+            title: "",
+            description: "",
+            status: "Not started" as const
+          },
+          sideQuests: Array.isArray(data.sideQuests) ? data.sideQuests : []
+        };
+
+        // Validate stats
+        const validatedStats = validatedData.stats.map((stat: Stat) => ({
+          ...stat,
+          config: {
+            ...stat.config,
+            color: stat.config.type === 'progress' ? (stat.config.color || '#3b82f6') : undefined
+          }
+        }));
+
+        setGameState({ ...validatedData, stats: validatedStats });
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : 'Failed to fetch game state');
+      }
     } catch (err) {
       console.error('Error fetching game state:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch game state');
+      // Ne pas réinitialiser l'état en cas d'erreur
     } finally {
       setIsLoading(false);
     }
@@ -111,8 +127,8 @@ export function useGameState() {
 
   const updateGameState = async (gameId: string, newState: Partial<GameState>) => {
     try {
-      const res = await apiRequest("PATCH", `/api/game-state/${gameId}`, newState);
-      if (!res.ok) throw new Error("Failed to update game state");
+      const response = await apiRequest("PATCH", `/api/game-state/${gameId}`, newState);
+      // If we get here, the request was successful (either got "OK" or JSON response)
       setGameState(prev => ({ ...prev, ...newState }));
       return true;
     } catch (err) {

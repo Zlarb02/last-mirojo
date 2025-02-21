@@ -4,10 +4,8 @@ export interface Message {
   timestamp: string;
 }
 
-export interface SavedGame {
+export interface SavedConversation {
   id: string;
   messages: Message[];
   timestamp: string;
 }
-
-// Si vous aviez des imports de SavedConversation, remplacez-les par SavedGame

@@ -49,7 +49,7 @@ CREATE TABLE public.game_states (
     character_name text,
     character_description text,
     main_quest jsonb,
-    side_quests jsonb[]
+    side_quests jsonb DEFAULT '[]'::jsonb
 );
 
 
@@ -63,7 +63,9 @@ CREATE TABLE public.games (
     game_state_id uuid NOT NULL,
     conversation jsonb NOT NULL,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+    updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+    name text DEFAULT ''::text,
+    description text
 );
 
 

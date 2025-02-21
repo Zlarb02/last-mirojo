@@ -1,50 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 
-interface Game {
-    id: number;
-    user_id: number;
-    game_state_id: number;
-    conversation: {
-      messages: Array<{
-        role: string;
-        content: string;
-        timestamp: string;
-      }>;
-      timestamp: string;
-    };
-    created_at: string;
-    updated_at: string;
-  }
+export interface Game {
+  id: string;  // Changed from number to string - matches UUID in database
+  userId: string;
+  gameStateId: string;
+  name: string; // S'assurer que name est présent dans l'interface
+  conversation: {
+    messages: Array<{
+      content: string;
+      role: string;
+    }>;
+    timestamp: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function useGames() {
-    const [games, setGames] = useState<Game[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-  
-    const fetchGames = async () => {
-      try {
-        setIsLoading(true);
-        const res = await apiRequest('GET', '/api/games');
-        if (!res.ok) throw new Error('Failed to fetch games');
-        const data = await res.json();
-        setGames(data.map((game: any) => ({
-            ...game,
-            id: Number(game.id),
-            user_id: Number(game.user_id),
-            game_state_id: Number(game.game_state_id)
-          })));
-      } catch (err) {
-        console.error('Error fetching games:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch games');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-  
-    useEffect(() => {
-      fetchGames();
-    }, []);
-  
-    return { games, isLoading, error, refetch: fetchGames };
-  }
+  const {
+    data: games = [],
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<Game[]>({
+    queryKey: ['games'],
+    queryFn: () => apiRequest('GET', '/api/games'),
+      });
+
+  return { games, isLoading, error, refetch };
+}
