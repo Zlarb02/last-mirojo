@@ -269,12 +269,18 @@ export class DatabaseStorage implements IStorage {
 
   async updateGame(
     gameId: string,
-    data: { conversation: { messages: Message[]; timestamp: string } }
+    data: {
+      conversation: { messages: Message[]; timestamp: string };
+      name?: string;
+      description?: string;
+    }
   ): Promise<Game> {
     const [updatedGame] = await db
       .update(gamesTable)
       .set({
         conversation: data.conversation,
+        name: data.name || undefined,
+        description: data.description || undefined,
         updatedAt: new Date(),
       })
       .where(eq(gamesTable.id, gameId))
@@ -284,24 +290,7 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Game not found");
     }
 
-    if (!updatedGame.userId) {
-      throw new Error("User ID is required");
-    }
-
-    if (!updatedGame.gameStateId) {
-      throw new Error("Game state ID is required");
-    }
-
-    return {
-      id: updatedGame.id,
-      name: updatedGame.name, // Ajouter le nom
-      description: updatedGame.description, // Ajouter la description
-      userId: updatedGame.userId,
-      gameStateId: updatedGame.gameStateId,
-      conversation: updatedGame.conversation,
-      createdAt: updatedGame.createdAt,
-      updatedAt: updatedGame.updatedAt
-    };
+    return updatedGame;
   }
 }
 

@@ -10,6 +10,7 @@ export interface Game {
     messages: Array<{
       content: string;
       role: string;
+      timestamp: string;
     }>;
     timestamp: string;
   };

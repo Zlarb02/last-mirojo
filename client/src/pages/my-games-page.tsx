@@ -26,6 +26,8 @@ import { navigate } from "wouter/use-browser-location";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { AIMessage } from "@/components/chat/ai-message";
 
 export default function MyGamesPage() {
   const { t } = useTranslation();
@@ -130,11 +132,37 @@ export default function MyGamesPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="text-sm text-muted-foreground line-clamp-2">
-                    {game.conversation.messages[
-                      game.conversation.messages.length - 1
-                    ]?.content || t("myGames.noMessages")}
-                  </div>
+                  <ScrollArea className="h-[150px] w-full pr-4">
+                    <div className="space-y-4">
+                      {game.conversation.messages.map((message, index) => (
+                        <div
+                          key={index}
+                          className={`flex ${
+                            message.role === "user" ? "justify-end" : "justify-start"
+                          }`}
+                        >
+                          <div
+                            className={`max-w-[90%] rounded-lg px-4 py-2 ${
+                              message.role === "user"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
+                            }`}
+                          >
+                            {message.role === "assistant" ? (
+                              <AIMessage content={message.content} />
+                            ) : (
+                              <div>{message.content}</div>
+                            )}
+                            {message.timestamp && (
+                              <div className="text-xs opacity-50 mt-1">
+                                {new Date(message.timestamp).toLocaleTimeString()}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                   <div className="flex gap-2">
                     <Button
                       className="flex-1"

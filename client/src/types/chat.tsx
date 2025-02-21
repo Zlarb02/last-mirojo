@@ -5,7 +5,7 @@ export interface Message {
 }
 
 export interface SavedConversation {
-  id: number
+  id: string
   messages: Message[];
   timestamp: string;
 }

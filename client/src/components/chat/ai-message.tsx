@@ -1,4 +1,3 @@
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatDisplay } from "../game/stat-display";
 
 interface GameStats {

@@ -28,39 +28,36 @@ interface ChatInterfaceProps {
   gameId?: string;
 }
 
-export function ChatInterface({ initialConversation, gameId }: ChatInterfaceProps) {
+export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { gameState, updateGameState } = useGameState();
+  const { gameState, updateGameState, setGameState } = useGameState();
   const { games } = useGames();
   const [messages, setMessages] = useState<Message[]>(
     () => initialConversation?.messages || []
   );
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [currentGameId, setCurrentGameId] = useState<string | undefined>(gameId);
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlGameId = searchParams.get('gameId');
+  const [currentGameId, setCurrentGameId] = useState<string | undefined>(urlGameId || undefined);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [gameName, setGameName] = useState("");
-  const [isSettingUpGame, setIsSettingUpGame] = useState(!gameId && !initialConversation);
+  const [isSettingUpGame, setIsSettingUpGame] = useState(!urlGameId && !initialConversation);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentName, setCurrentName] = useState<string>("");
+  const [conversation, setConversation] = useState<SavedConversation | null>(initialConversation || null);
+  console.log(urlGameId)
 
   // Mettre à jour currentGameId quand gameId change
   useEffect(() => {
-    if (gameId) {
-      setCurrentGameId(gameId);
+    if (urlGameId) {
+      setCurrentGameId(urlGameId);
       setIsSettingUpGame(false);
+      loadGameConversation(urlGameId);
     }
-  }, [gameId]);
-
-  // Mettre à jour messages quand initialConversation change
-  useEffect(() => {
-    if (initialConversation?.messages) {
-      setMessages(initialConversation.messages);
-      setIsSettingUpGame(false);
-    }
-  }, [initialConversation]);
+  }, [urlGameId]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -71,13 +68,51 @@ export function ChatInterface({ initialConversation, gameId }: ChatInterfaceProp
 
   // Ajouter un useEffect pour récupérer le nom de la partie
   useEffect(() => {
-    if (gameId && games.length > 0) {
-      const game = games.find(g => g.id === gameId);
+    if (urlGameId && games.length > 0) {
+      const game = games.find(g => g.id === urlGameId);
       if (game?.name) {
         setCurrentName(game.name);
       }
     }
-  }, [gameId, games]);
+  }, [urlGameId, games]);
+
+  const loadGameConversation = async (gameId: string) => {
+    try {
+      const gameData = await apiRequest("GET", `/api/game/${gameId}`);
+      if (gameData?.conversation) {
+        setConversation(gameData.conversation);
+        setMessages(gameData.conversation.messages);
+      }
+
+      // Charger le gameState
+      const gameStateData = await apiRequest("GET", `/api/game-state/${gameId}`);
+      if (gameStateData) {
+        // Met à jour le gameState avec les données reçues
+        const updatedGameState = {
+          stats: gameStateData.stats || [],
+          inventory: gameStateData.inventory || [],
+          eventLog: gameStateData.eventLog || [],
+          characterName: gameStateData.characterName || "",
+          characterDescription: gameStateData.characterDescription || "",
+          mainQuest: gameStateData.mainQuest || { 
+            title: "", 
+            description: "", 
+            status: "Not started" as const 
+          },
+          sideQuests: gameStateData.sideQuests || []
+        };
+        // Utiliser la fonction setGameState du hook useGameState
+        setGameState(updatedGameState);
+      }
+    } catch (error) {
+      console.error("Failed to load game conversation:", error);
+      toast({
+        title: t("error"),
+        description: t("game.loadFailed"),
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleResponse = async (response: string, currentState: any) => {
     // Extraire le message des balises <response>
@@ -90,17 +125,55 @@ export function ChatInterface({ initialConversation, gameId }: ChatInterfaceProp
     const healthMatch = content.match(/<health>(.*?)<\/health>/);
     const manaMatch = content.match(/<mana>(.*?)<\/mana>/);
     const levelMatch = content.match(/<level>(.*?)<\/level>/);
+    
+    // Extract character information
+    const nameMatch = content.match(/<name>(.*?)<\/name>/);
+    const descriptionMatch = content.match(/<description>(.*?)<\/description>/);
+    
+    // Extract quest information
+    const questMatch = content.match(/<mainQuest>([\s\S]*?)<\/mainQuest>/);
+    const questTitleMatch = questMatch && questMatch[1].match(/<title>(.*?)<\/title>/);
+    const questDescriptionMatch = questMatch && questMatch[1].match(/<description>(.*?)<\/description>/);
+    const questStatusMatch = questMatch && questMatch[1].match(/<status>(.*?)<\/status>/);
 
-    // Créer les mises à jour en fonction des valeurs trouvées
+    // Create updates while preserving existing state
     const updates = {
-      stats: { ...currentState.stats },
-      inventory: [...currentState.inventory],
-      eventLog: [...currentState.eventLog],
+      ...currentState,
+      stats: Array.isArray(currentState.stats) ? [...currentState.stats] : [],
+      inventory: Array.isArray(currentState.inventory) ? [...currentState.inventory] : [],
+      eventLog: Array.isArray(currentState.eventLog) ? [...currentState.eventLog] : [],
+      characterName: nameMatch?.[1] || currentState.characterName || "",
+      characterDescription: descriptionMatch?.[1] || currentState.characterDescription || "",
+      mainQuest: {
+        ...currentState.mainQuest,
+        title: questTitleMatch?.[1] || currentState.mainQuest?.title || "",
+        description: questDescriptionMatch?.[1] || currentState.mainQuest?.description || "",
+        status: (questStatusMatch?.[1] || currentState.mainQuest?.status || "active") as "active" | "completed"
+      }
     };
 
-    if (healthMatch) updates.stats.health = parseInt(healthMatch[1]);
-    if (manaMatch) updates.stats.mana = parseInt(manaMatch[1]);
-    if (levelMatch) updates.stats.level = parseInt(levelMatch[1]);
+    // Only update stats if we have stats array
+    if (Array.isArray(updates.stats)) {
+      // Update stats only if new values are provided
+      if (healthMatch) {
+        const healthStat = updates.stats.find((s: { name: string; }) => s.name === "Santé");
+        if (healthStat) {
+          healthStat.value = parseInt(healthMatch[1]);
+        }
+      }
+      if (manaMatch) {
+        const manaStat = updates.stats.find((s: { name: string; }) => s.name === "Mana");
+        if (manaStat) {
+          manaStat.value = parseInt(manaMatch[1]);
+        }
+      }
+      if (levelMatch) {
+        const levelStat = updates.stats.find((s: { name: string; }) => s.name === "Niveau");
+        if (levelStat) {
+          levelStat.value = parseInt(levelMatch[1]);
+        }
+      }
+    }
 
     return { cleanResponse: response, updates };
   };
@@ -126,7 +199,17 @@ export function ChatInterface({ initialConversation, gameId }: ChatInterfaceProp
       const contextMessages = [...lastMessages, userMessage];
 
       const currentGameState = {
-        ...gameState,
+        stats: gameState.stats || [],
+        inventory: gameState.inventory || [],
+        eventLog: gameState.eventLog || [],
+        characterName: gameState.characterName || "",
+        characterDescription: gameState.characterDescription || "",
+        mainQuest: gameState.mainQuest || { 
+          title: "", 
+          description: "", 
+          status: "Not started" as const 
+        },
+        sideQuests: gameState.sideQuests || [],
         savedAt: new Date().toISOString()
       };
 
@@ -154,9 +237,11 @@ export function ChatInterface({ initialConversation, gameId }: ChatInterfaceProp
       if (gameId && updates && Object.keys(updates).length > 0) {
         try {
           const success = await updateGameState(gameId, {
-            stats: updates.stats,
-            inventory: updates.inventory,
-            eventLog: updates.eventLog
+            ...updates,
+            characterName: gameState.characterName,
+            characterDescription: gameState.characterDescription,
+            mainQuest: gameState.mainQuest,
+            sideQuests: gameState.sideQuests
           });
           
           if (!success) {
@@ -210,13 +295,10 @@ export function ChatInterface({ initialConversation, gameId }: ChatInterfaceProp
     isAutoSave = false
   ) => {
     if (messagesToSave.length === 0) return;
-
+  
     try {
       const endpoint = "/api/game/save";
       const payload = {
-        id: currentGameId, // Ajouter l'ID existant pour la mise à jour
-        name: currentName || gameName,
-        conversationId: currentGameId,
         conversation: {
           messages: messagesToSave,
           timestamp: new Date().toISOString(),
@@ -231,30 +313,43 @@ export function ChatInterface({ initialConversation, gameId }: ChatInterfaceProp
           sideQuests: Array.isArray(gameState.sideQuests) ? gameState.sideQuests : null,
           savedAt: new Date().toISOString(),
         },
+        name: currentName || gameName,
+        description: "", // vous pouvez ajouter une description si nécessaire
       };
-
-      console.log('Saving game with payload:', payload);
-
+  
+      // Si nous avons un gameId, mettons à jour la partie existante
+      if (currentGameId) {
+        const response = await apiRequest("POST", `/api/game/${currentGameId}`, payload);
+        queryClient.invalidateQueries({ queryKey: ["games"] });
+        
+        if (!isAutoSave) {
+          toast({
+            title: t("success"),
+            description: t("game.chat.saved"),
+          });
+        }
+        return response;
+      }
+  
+      // Sinon, créons une nouvelle partie
       const savedGame = await apiRequest("POST", endpoint, payload);
-
-      // Ne mettre à jour l'URL et l'ID que si c'est une nouvelle partie
-      if (savedGame?.id && !currentGameId) {
+      
+      if (savedGame?.id) {
         setCurrentGameId(savedGame.id);
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.set("gameId", savedGame.id);
         window.history.pushState({}, "", newUrl.toString());
       }
-      
-      // Toujours rafraîchir la liste des jeux après une sauvegarde
+  
       queryClient.invalidateQueries({ queryKey: ["games"] });
-
+  
       if (!isAutoSave) {
         toast({
           title: t("success"),
           description: t("game.chat.saved"),
         });
       }
-
+  
       return savedGame;
     } catch (error) {
       console.error("Failed to save conversation:", error);

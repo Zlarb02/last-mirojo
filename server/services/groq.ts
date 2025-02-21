@@ -65,6 +65,13 @@ Derniers événements: ${
           gameContext.eventLog?.slice(-3).join(" → ") ||
           "Aucun événement récent"
         }
+
+Quêtes secondaires:
+${gameContext.sideQuests?.map(quest => `
+- ${quest.title}
+  - Description: ${quest.description}
+  - Statut: ${quest.status}
+`).join('\n') || "Aucune quête secondaire"}
 `
       : "";
 
@@ -92,6 +99,17 @@ ${gameStatePrompt}
     <mana></mana>
     <level></level>
   </stats>
+  <character>
+    <name>${gameContext?.characterName || ""}</name>
+    <description>${gameContext?.characterDescription || ""}</description>
+  </character>
+  <quests>
+    <mainQuest>
+      <title>${gameContext?.mainQuest?.title || ""}</title>
+      <description>${gameContext?.mainQuest?.description || ""}</description>
+      <status>${gameContext?.mainQuest?.status || "active"}</status>
+    </mainQuest>
+  </quests>
   <inventory>
     <item1></item1>
     <item2></item2>

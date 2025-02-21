@@ -313,6 +313,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/game/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const gameId = req.params.id;
+
+      const game = await storage.getGameById(gameId);
+      if (!game || game.userId !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+
+      res.json(game);
+    } catch (error) {
+      console.error("Failed to fetch game:", error);
+      res.status(500).json({ error: "Failed to fetch game" });
+    }
+  });
+
+  app.post("/api/game/:id", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const gameId = req.params.id;
+      const { conversation, gameState, name, description } = req.body;
+
+      // Vérifier que le jeu existe et appartient à l'utilisateur
+      const game = await storage.getGameById(gameId);
+      if (!game || game.userId !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+
+      // Mettre à jour la conversation et le game state
+      const updatedGame = await storage.updateGame(gameId, {
+        conversation,
+        name,
+        description,
+      });
+
+      if (gameState && game.gameStateId) {
+        await storage.updateGameStateByGameId(game.gameStateId, gameState);
+      }
+
+      res.json(updatedGame);
+    } catch (error) {
+      console.error("Failed to update game:", error);
+      res.status(500).json({ error: "Failed to update game" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
