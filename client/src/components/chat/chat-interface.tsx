@@ -153,16 +153,6 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
 
     try {
       const endpoint = "/api/game/save";
-      const {
-        stats,
-        inventory,
-        eventLog,
-        characterName,
-        characterDescription,
-        mainQuest,
-        sideQuests,
-      } = gameState;
-
       const payload = {
         conversationId: currentGameId,
         conversation: {
@@ -170,29 +160,32 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
           timestamp: new Date().toISOString(),
         },
         gameState: {
-          stats,
-          inventory,
-          eventLog,
-          characterName,
-          characterDescription,
-          mainQuest,
-          sideQuests,
+          stats: gameState.stats || [],
+          inventory: Array.isArray(gameState.inventory) ? gameState.inventory : [],
+          eventLog: Array.isArray(gameState.eventLog) ? gameState.eventLog : [],
+          characterName: gameState.characterName || "",
+          characterDescription: gameState.characterDescription || "",
+          mainQuest: gameState.mainQuest || null,
+          sideQuests: Array.isArray(gameState.sideQuests) ? gameState.sideQuests : null,
+          savedAt: new Date().toISOString(),
         },
       };
 
-      const res = await apiRequest("POST", endpoint, payload);
+      console.log('Saving game with payload:', payload); // Debug log
 
+      const res = await apiRequest("POST", endpoint, payload);
+      
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || "Failed to save conversation");
+        const errorData = await res.json();
+        throw new Error(`Failed to save game: ${errorData.error}`);
       }
 
       const savedGame = await res.json();
-      if (!currentGameId && savedGame.id) {
+
+      if (savedGame.id && !currentGameId) {
         setCurrentGameId(savedGame.id);
-        // Mettre à jour l'URL avec le nouveau gameId
         const newUrl = new URL(window.location.href);
-        newUrl.searchParams.set("gameId", String(savedGame.id));
+        newUrl.searchParams.set("gameId", savedGame.id);
         window.history.pushState({}, "", newUrl.toString());
       }
 
@@ -209,6 +202,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         description: t("game.chat.saveFailed"),
         variant: "destructive",
       });
+      throw error;
     }
   };
 

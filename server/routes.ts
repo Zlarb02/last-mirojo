@@ -14,43 +14,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const { conversationId, conversation, gameState } = req.body;
+      const { conversation, gameState } = req.body;
 
-      let savedGame;
-
-      // Si un ID est fourni, mettre à jour le jeu existant
-      if (conversationId) {
-        const existingGame = await storage.getGameById(conversationId);
-        if (!existingGame || existingGame.user_id !== userId) {
-          return res.status(404).json({ error: "Game not found" });
-        }
-
-        savedGame = await storage.updateGame(conversationId, {
-          conversation,
-        });
-
-        // Mettre à jour le game state
-        if (gameState && existingGame.game_state_id) {
-          await storage.updateGameStateByGameId(
-            existingGame.game_state_id,
-            gameState
-          );
-        }
-      } else {
-        // Créer un nouveau jeu avec son game state
-        savedGame = await storage.saveGame({
-          user_id: userId,
-          conversation,
-          gameState,
-        });
+      if (!conversation || !conversation.messages) {
+        return res.status(400).json({ error: "Invalid conversation data" });
       }
 
-      res.json({
-        ...savedGame,
+      const savedGame = await storage.saveGame({
+        user_id: userId,
+        conversation: {
+          messages: conversation.messages,
+          timestamp: conversation.timestamp || new Date().toISOString(),
+        },
+        gameState: gameState ? {
+          ...gameState,
+          userId,
+        } : undefined,
       });
+
+      res.json(savedGame);
     } catch (error) {
       console.error("Failed to save game:", error);
-      res.status(500).json({ error: "Failed to save game" });
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to save game"
+      });
     }
   });
 
@@ -59,11 +46,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const gameId = parseInt(req.params.id);
+      const gameId = req.params.id;
 
       const game = await storage.getGameById(gameId);
 
-      if (!game || game.user_id !== userId) {
+      if (!game || game.userId !== userId) {
         return res.status(404).json({ error: "Game not found" });
       }
 
@@ -107,19 +94,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user!.id;
       const { stats, inventory, eventLog } = req.body;
       const gameId = req.query.gameId
-        ? parseInt(req.query.gameId as string)
+        ? req.query.gameId as string
         : null;
 
       if (gameId) {
         // Mise à jour d'une partie existante
         const game = await storage.getGameById(gameId);
-        if (!game || game.user_id !== userId) {
+        if (!game || game.userId !== userId) {
           return res.status(404).json({ error: "Game not found" });
         }
-        if (game.game_state_id === null) {
+        if (game.gameStateId === null) {
           return res.status(404).json({ error: "Game state not found" });
         }
-        await storage.updateGameStateByGameId(game.game_state_id, {
+        await storage.updateGameStateByGameId(game.gameStateId, {
           stats,
           inventory,
           eventLog,
@@ -147,19 +134,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const gameId = parseInt(req.params.gameId);
+      const gameId = req.params.gameId;
 
       // Vérifier que le jeu existe et appartient à l'utilisateur
       const game = await storage.getGameById(gameId);
-      if (!game || game.user_id !== userId) {
+      if (!game || game.userId !== userId) {
         return res.status(404).json({ error: "Game not found" });
       }
 
       // Récupérer le game state associé au jeu
-      if (game.game_state_id === null) {
+      if (game.gameStateId === null) {
         return res.status(404).json({ error: "Game state not found" });
       }
-      const gameState = await storage.getGameStateByGameId(game.game_state_id);
+      const gameState = await storage.getGameStateByGameId(game.gameStateId);
       if (!gameState) {
         return res.status(404).json({ error: "Game state not found" });
       }
@@ -188,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const gameId = parseInt(req.params.gameId);
+      const gameId = req.params.gameId;
       const {
         stats,
         inventory,
@@ -201,13 +188,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Vérifier que le jeu existe et appartient à l'utilisateur
       const game = await storage.getGameById(gameId);
-      if (!game || game.user_id !== userId) {
+      if (!game || game.userId !== userId) {
         return res.status(404).json({ error: "Game not found" });
       }
-      if (game.game_state_id === null) {
+      if (game.gameStateId === null) {
         return res.status(404).json({ error: "Game state not found" });
       }
-      await storage.updateGameStateByGameId(game.game_state_id, {
+      await storage.updateGameStateByGameId(game.gameStateId, {
         stats,
         inventory,
         eventLog,
@@ -235,9 +222,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let currentGameState = gameState;
       if (gameId) {
         const game = await storage.getGameById(gameId);
-        if (game && game.game_state_id) {
+        if (game && game.gameStateId) {
           const dbGameState = await storage.getGameStateByGameId(
-            game.game_state_id
+            game.gameStateId
           );
           if (dbGameState) {
             currentGameState = {
@@ -307,11 +294,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const gameId = parseInt(req.params.id);
+      const gameId = req.params.id;
 
       // Check if game exists and belongs to user
       const game = await storage.getGameById(gameId);
-      if (!game || game.user_id !== userId) {
+      if (!game || game.userId !== userId) {
         return res.status(404).json({ error: "Game not found" });
       }
 

@@ -82,7 +82,7 @@ export function useGameState() {
       if (gameId) {
         res = await apiRequest("GET", `/api/game-state/${gameId}`);
       } else {
-        res = await apiRequest("GET", `/api/game-state`);
+        return; // Don't fetch if no gameId
       }
 
       if (!res.ok) throw new Error("Failed to fetch game state");

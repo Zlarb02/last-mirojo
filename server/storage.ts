@@ -1,33 +1,17 @@
-import { User, InsertUser, GameState, games } from "@shared/schema";
-import { db, users, gameStates } from "./db";
+import { User, InsertUser, GameState, Game, Message } from "@shared/schema";
+import { db, users, gameStates, games as gamesTable } from "./db";
 import { asc, desc, eq } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 
-interface Game {
-  id: number;
-  user_id: number;
-  game_state_id: number;
-  conversation: {
-    messages: Array<{
-      role: string;
-      content: string;
-      timestamp: string;
-    }>;
-    timestamp: string;
-  };
-  created_at: string;
-  updated_at: string;
-}
-
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;  // Changed from number to string
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateGameStateByGameId(gameId: number, gameState: Partial<GameState>): Promise<void>;
-  getGameStateByGameId(gameId: number): Promise<GameState | undefined>;
+  updateGameStateByGameId(gameId: string, gameState: Partial<GameState>): Promise<void>;  // Changed from number to string
+  getGameStateByGameId(gameId: string): Promise<GameState | undefined>;  // Changed from number to string
   sessionStore: session.Store;
 }
 
@@ -41,7 +25,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async createInitialGameState(userId: number): Promise<GameState> {
+  async createInitialGameState(userId: string): Promise<GameState> {  // Changed from number to string
     const initialGameState = {
       userId,
       stats: [
@@ -92,69 +76,71 @@ export class DatabaseStorage implements IStorage {
     return gameState;
   }
 
-  async saveGame(data: Pick<Game, "user_id" | "conversation"> & { gameState?: any }) {
-    const [gameState] = await db
-      .insert(gameStates)
-      .values({
+  async saveGame(data: {
+    user_id: string;
+    conversation: { messages: Message[]; timestamp: string };
+    gameState?: Partial<GameState>;
+  }) {
+    try {
+      if (!data.user_id) {
+        throw new Error("User ID is required");
+      }
+
+      // Ensure valid default values for game state
+      const gameStateData = {
         userId: data.user_id,
-        stats: data.gameState?.stats || [
-          {
-            name: "Santé",
-            value: 100,
-            config: {
-              type: "progress",
-              max: 100,
-              color: "#ef4444"
-            }
-          },
-          {
-            name: "Mana",
-            value: 100,
-            config: {
-              type: "progress",
-              max: 100,
-              color: "#3b82f6"
-            }
-          },
-          {
-            name: "Niveau",
-            value: 1,
-            config: {
-              type: "number"
-            }
-          }
-        ],
+        stats: data.gameState?.stats || [],
         inventory: data.gameState?.inventory || [],
         eventLog: data.gameState?.eventLog || [],
         characterName: data.gameState?.characterName || "",
         characterDescription: data.gameState?.characterDescription || "",
-        mainQuest: data.gameState?.mainQuest || {
-          title: "",
-          description: "",
-          status: "Not started"
-        },
-        sideQuests: data.gameState?.sideQuests || [],
+        mainQuest: data.gameState?.mainQuest || null,
+        // Ensure sideQuests is properly handled as JSONB
+        sideQuests: data.gameState?.sideQuests || [], // Changed to default empty array
         savedAt: new Date().toISOString(),
-      })
-      .returning();
+      };
 
-    const [savedGame] = await db
-      .insert(games)
-      .values({
-        user_id: data.user_id,
-        game_state_id: gameState.id,
-        conversation: data.conversation,
-      })
-      .returning();
+      // Create new game state
+      const [gameState] = await db
+        .insert(gameStates)
+        .values(gameStateData)
+        .returning();
 
-    return {
-      ...savedGame,
-      stats: gameState.stats,
-      saved_at: gameState.savedAt,
-    };
+      if (!gameState) {
+        throw new Error("Failed to create game state");
+      }
+
+      // Create new game with proper conversation format
+      const gameData = {
+        userId: data.user_id,
+        gameStateId: gameState.id,
+        conversation: {
+          messages: data.conversation.messages || [],
+          timestamp: data.conversation.timestamp || new Date().toISOString(),
+        },
+      };
+
+      const [savedGame] = await db
+        .insert(gamesTable)
+        .values(gameData)
+        .returning();
+
+      if (!savedGame) {
+        throw new Error("Failed to save game");
+      }
+
+      return {
+        ...savedGame,
+        stats: gameState.stats,
+        saved_at: gameState.savedAt,
+      };
+    } catch (error) {
+      console.error("Error saving game:", error);
+      throw error;
+    }
   }
 
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
@@ -179,7 +165,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getGameStateByGameId(gameStateId: number): Promise<GameState | undefined> {
+  async getGameStateByGameId(gameStateId: string): Promise<GameState | undefined> {  // Changed from number to string
     const [gameState] = await db
       .select()
       .from(gameStates)
@@ -189,7 +175,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGameStateByGameId(
-    gameStateId: number,
+    gameStateId: string,  // Changed from number to string
     gameState: Partial<GameState>
   ): Promise<void> {
     await db
@@ -201,99 +187,110 @@ export class DatabaseStorage implements IStorage {
       .where(eq(gameStates.id, gameStateId));
   }
 
-  async getUserGames(userId: number) {
-    return await db
+  async getUserGames(userId: string): Promise<Game[]> {
+    const results = await db
       .select({
-        id: games.id,
-        user_id: games.user_id,
-        game_state_id: games.game_state_id,
-        conversation: games.conversation,
-        created_at: games.created_at,
-        updated_at: games.updated_at,
-        stats: gameStates.stats,
-        saved_at: gameStates.savedAt,
+        id: gamesTable.id,
+        userId: gamesTable.userId, // Changed from user_id
+        gameStateId: gamesTable.gameStateId, // Changed from game_state_id
+        conversation: gamesTable.conversation,
+        createdAt: gamesTable.createdAt, // Changed from created_at
+        updatedAt: gamesTable.updatedAt, // Changed from updated_at
       })
-      .from(games)
-      .leftJoin(gameStates, eq(games.game_state_id, gameStates.id))
-      .where(eq(games.user_id, userId))
-      .orderBy(desc(games.updated_at))
-      .then((games) =>
-        games.map((game) => ({
-          ...game,
-          id: Number(game.id), // Conversion explicite en number
-          user_id: Number(game.user_id),
-          game_state_id: Number(game.game_state_id),
-        }))
-      );
+      .from(gamesTable)
+      .leftJoin(gameStates, eq(gamesTable.gameStateId, gameStates.id))
+      .where(eq(gamesTable.userId, userId))
+      .orderBy(desc(gamesTable.updatedAt));
+
+    return results;
   }
 
-  async getLastConversation(userId: number) {
+  async getLastConversation(userId: string): Promise<{ messages: Message[]; timestamp: string } | null> {  // Changed from number to string
     const [lastGame] = await db
       .select({
-        id: games.id,
-        user_id: games.user_id,
-        game_state_id: games.game_state_id,
-        conversation: games.conversation,
-        created_at: games.created_at,
-        updated_at: games.updated_at,
+        id: gamesTable.id,
+        user_id: gamesTable.userId,
+        game_state_id: gamesTable.gameStateId,
+        conversation: gamesTable.conversation,
+        created_at: gamesTable.createdAt,
+        updated_at: gamesTable.updatedAt,
         stats: gameStates.stats,
         saved_at: gameStates.savedAt,
       })
-      .from(games)
-      .leftJoin(gameStates, eq(games.game_state_id, gameStates.id))
-      .where(eq(games.user_id, userId))
-      .orderBy(desc(games.updated_at))
+      .from(gamesTable)
+      .leftJoin(gameStates, eq(gamesTable.gameStateId, gameStates.id))
+      .where(eq(gamesTable.userId, userId))
+      .orderBy(desc(gamesTable.updatedAt))
       .limit(1);
 
     return lastGame?.conversation || null;
   }
 
-  async getGameById(gameId: number) {
-    const [game] = await db
+  async getGameById(gameId: string): Promise<Game | undefined> {  // Changed from number to string
+    const [result] = await db
       .select({
-        id: games.id,
-        user_id: games.user_id,
-        game_state_id: games.game_state_id,
-        conversation: games.conversation,
-        created_at: games.created_at,
-        updated_at: games.updated_at,
-        stats: gameStates.stats,
-        saved_at: gameStates.savedAt,
+        id: gamesTable.id,
+        userId: gamesTable.userId,
+        gameStateId: gamesTable.gameStateId,
+        conversation: gamesTable.conversation,
+        createdAt: gamesTable.createdAt,
+        updatedAt: gamesTable.updatedAt,
       })
-      .from(games)
-      .leftJoin(gameStates, eq(games.game_state_id, gameStates.id))
-      .where(eq(games.id, gameId));
+      .from(gamesTable)
+      .leftJoin(gameStates, eq(gamesTable.gameStateId, gameStates.id))
+      .where(eq(gamesTable.id, gameId));
 
-    return game;
+    return result;
   }
 
-  async deleteGame(gameId: number) {
-    // D'abord supprimer le jeu lui-même
+  async deleteGame(gameId: string): Promise<Game | undefined> {  // Changed from number to string
     const [deletedGame] = await db
-      .delete(games)
-      .where(eq(games.id, gameId))
+      .delete(gamesTable)
+      .where(eq(gamesTable.id, gameId))
       .returning();
 
-    // Puis supprimer le game state associé si nécessaire
-    if (deletedGame?.game_state_id) {
+    if (deletedGame?.gameStateId) {
       await db
         .delete(gameStates)
-        .where(eq(gameStates.id, deletedGame.game_state_id));
+        .where(eq(gameStates.id, deletedGame.gameStateId));
     }
 
     return deletedGame;
   }
 
-  async updateGame(gameId: number, data: { conversation: any }) {
+  async updateGame(
+    gameId: string,
+    data: { conversation: { messages: Message[]; timestamp: string } }
+  ): Promise<Game> {
     const [updatedGame] = await db
-      .update(games)
+      .update(gamesTable)
       .set({
         conversation: data.conversation,
+        updatedAt: new Date(),
       })
-      .where(eq(games.id, gameId))
+      .where(eq(gamesTable.id, gameId))
       .returning();
 
-    return updatedGame;
+    if (!updatedGame) {
+      throw new Error("Game not found");
+    }
+
+    if (!updatedGame.userId) {
+      throw new Error("User ID is required");
+    }
+
+    if (!updatedGame.gameStateId) {
+      throw new Error("Game state ID is required");
+    }
+
+    return {
+      id: updatedGame.id,
+      userId: updatedGame.userId,
+      gameStateId: updatedGame.gameStateId,
+      conversation: updatedGame.conversation,
+      createdAt: updatedGame.createdAt,
+      updatedAt: updatedGame.updatedAt
+    };
   }
 }
 
