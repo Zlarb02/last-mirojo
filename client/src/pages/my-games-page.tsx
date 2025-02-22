@@ -68,10 +68,10 @@ export default function MyGamesPage() {
     try {
       // Convert the timestamp to a Date object
       const date = new Date(dateString);
-        
+
       // Return early if invalid date
       if (isNaN(date.getTime())) {
-        console.warn('Invalid date received:', dateString);
+        console.warn("Invalid date received:", dateString);
         return t("myGames.invalidDate");
       }
 
@@ -95,7 +95,7 @@ export default function MyGamesPage() {
       <div className="flex-1 flex flex-col">
         <Header />
         <div className="container mx-auto">
-          <h1 className="text-2xl font-bold mb-6">
+          <h1 className="text-2xl font-bold mb-6 p-4">
             {t("myGames.title", "Mes parties")}
           </h1>
 
@@ -111,7 +111,7 @@ export default function MyGamesPage() {
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 p-4">
             {games.map((game) => (
               <Card key={game.id}>
                 <CardHeader>
@@ -138,7 +138,9 @@ export default function MyGamesPage() {
                         <div
                           key={index}
                           className={`flex ${
-                            message.role === "user" ? "justify-end" : "justify-start"
+                            message.role === "user"
+                              ? "justify-end"
+                              : "justify-start"
                           }`}
                         >
                           <div
@@ -155,7 +157,9 @@ export default function MyGamesPage() {
                             )}
                             {message.timestamp && (
                               <div className="text-xs opacity-50 mt-1">
-                                {new Date(message.timestamp).toLocaleTimeString()}
+                                {new Date(
+                                  message.timestamp
+                                ).toLocaleTimeString()}
                               </div>
                             )}
                           </div>

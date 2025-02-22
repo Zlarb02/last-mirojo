@@ -49,34 +49,65 @@ export function setupAuth(app: Express) {
       } else {
         return done(null, user);
       }
-    }),
+    })
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
-    const user = await storage.getUser(id);
-    done(null, user);
+  passport.deserializeUser(async (id: string, done) => {
+    try {
+      const user = await storage.getUser(id);
+      done(null, user);
+    } catch (error) {
+      done(error);
+    }
   });
 
   app.post("/api/register", async (req, res, next) => {
-    const existingUser = await storage.getUserByUsername(req.body.username);
-    if (existingUser) {
-      return res.status(400).send("Username already exists");
+    try {
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+
+      const user = await storage.createUser({
+        ...req.body,
+        password: await hashPassword(req.body.password),
+      });
+
+      req.login(user, (err) => {
+        if (err) return next(err);
+        res.status(201).json(user);
+      });
+    } catch (error) {
+      next(error);
     }
-
-    const user = await storage.createUser({
-      ...req.body,
-      password: await hashPassword(req.body.password),
-    });
-
-    req.login(user, (err) => {
-      if (err) return next(err);
-      res.status(201).json(user);
-    });
   });
 
-  app.post("/api/login", passport.authenticate("local"), (req, res) => {
-    res.status(200).json(req.user);
+  app.post("/api/login", (req, res, next) => {
+    console.log("Login attempt:", req.body); // Debug
+    passport.authenticate(
+      "local",
+      (err: any, user: Express.User, info: any) => {
+        console.log("Passport auth result:", { err, user, info }); // Debug
+        if (err) {
+          console.error("Login error:", err); // Debug
+          return next(err);
+        }
+        if (!user) {
+          return res
+            .status(401)
+            .json({ error: "Invalid username or password" });
+        }
+        req.logIn(user, (err) => {
+          if (err) {
+            console.error("Login session error:", err); // Debug
+            return next(err);
+          }
+          console.log("Login successful, sending user:", user); // Debug
+          return res.json(user);
+        });
+      }
+    )(req, res, next);
   });
 
   app.post("/api/logout", (req, res, next) => {
