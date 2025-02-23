@@ -13,6 +13,8 @@ import {
 import { useState, useEffect } from "react";
 import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
 import { Input } from "../ui/input";
+import { Button } from "../ui/button";
+import * as Icons from "lucide-react";
 
 interface AppearanceSettingsProps {
   section?: "theme" | "colors" | "style";
@@ -24,6 +26,8 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
   const [variant, setVariant] = useState<ThemeVariant>("classic");
   const [uiEffects, setUiEffects] = useState(false);
   const [bgVideo, setBgVideo] = useState(false);
+  const [bgImage, setBgImage] = useState("");
+  const [overlayOpacity, setOverlayOpacity] = useState("0.75");
 
   useEffect(() => {
     const savedVariant = localStorage.getItem("theme-variant") as ThemeVariant;
@@ -32,6 +36,15 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
     }
     setUiEffects(localStorage.getItem("ui-effects") === "true");
     setBgVideo(localStorage.getItem("bg-video") === "true");
+    const savedBgImage = localStorage.getItem("bg-image") || "";
+    setBgImage(savedBgImage);
+    if (savedBgImage) {
+      document.documentElement.style.setProperty(
+        "--bg-image",
+        `url(${savedBgImage})`
+      );
+    }
+    setOverlayOpacity(localStorage.getItem("bg-overlay-opacity") || "0.75");
   }, []);
 
   const handleThemeVariantChange = (newVariant: string) => {
@@ -125,6 +138,24 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
     }
   };
 
+  const handleBgImageChange = (url: string) => {
+    setBgImage(url);
+    if (url) {
+      document.documentElement.style.setProperty("--bg-image", `url(${url})`);
+      localStorage.setItem("bg-image", url);
+    } else {
+      document.documentElement.style.removeProperty("--bg-image");
+      localStorage.removeItem("bg-image");
+    }
+  };
+
+  const handleOverlayChange = (value: string) => {
+    const root = document.documentElement;
+    setOverlayOpacity(value);
+    root.style.setProperty("--bg-overlay-opacity", value);
+    localStorage.setItem("bg-overlay-opacity", value);
+  };
+
   return (
     <div className="space-y-6">
       {(!section || section === "theme") && (
@@ -148,24 +179,114 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
       )}
 
       {(!section || section === "style") && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("theme.style")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup
-              value={variant}
-              onValueChange={handleThemeVariantChange}
-            >
-              {Object.entries(themes).map(([key, theme]) => (
-                <div key={key} className="flex items-center space-x-2">
-                  <RadioGroupItem value={key} id={key} />
-                  <Label htmlFor={key}>{theme.name}</Label>
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("theme.style")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={variant}
+                onValueChange={handleThemeVariantChange}
+              >
+                {Object.entries(themes).map(([key, theme]) => (
+                  <div key={key} className="flex items-center space-x-2">
+                    <RadioGroupItem value={key} id={key} />
+                    <Label htmlFor={key}>{theme.name}</Label>
+                  </div>
+                ))}
+              </RadioGroup>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("theme.background")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="bg-image">{t("theme.backgroundImage")}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="bg-image"
+                    type="url"
+                    placeholder="https://example.com/image.jpg"
+                    value={bgImage}
+                    onChange={(e) => handleBgImageChange(e.target.value)}
+                    className="flex-1"
+                  />
+                  {bgImage && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleBgImageChange("")}
+                    >
+                      <Icons.X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-              ))}
-            </RadioGroup>
-          </CardContent>
-        </Card>
+              </div>
+
+              {bgImage && (
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="overlay-opacity">
+                      {t("theme.overlayOpacity")}
+                    </Label>
+                    <div className="flex gap-4 items-center">
+                      <Input
+                        type="range"
+                        id="overlay-opacity"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={overlayOpacity}
+                        onChange={(e) => handleOverlayChange(e.target.value)}
+                        className="flex-1"
+                      />
+                      <span className="w-12 text-right">
+                        {Math.round(Number(overlayOpacity) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="bg-video">
+                  {t("settings.appearance.backgroundVideo")}
+                </Label>
+                <Switch
+                  id="bg-video"
+                  checked={bgVideo}
+                  onCheckedChange={(checked) =>
+                    handleEffectChange("bg", checked)
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("settings.appearance.uiEffects")}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="ui-effects">
+                  {t("settings.appearance.uiEffectsDescription")}
+                </Label>
+                <Switch
+                  id="ui-effects"
+                  checked={uiEffects}
+                  onCheckedChange={(checked) =>
+                    handleEffectChange("ui", checked)
+                  }
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {(!section || section === "colors") && (
@@ -199,36 +320,6 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
                   }
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {(!section || section === "style") && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("settings.appearance.uiEffects")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="bg-video">
-                {t("settings.appearance.backgroundVideo")}
-              </Label>
-              <Switch
-                id="bg-video"
-                checked={bgVideo}
-                onCheckedChange={(checked) => handleEffectChange("bg", checked)}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="ui-effects">
-                {t("settings.appearance.uiEffectsDescription")}
-              </Label>
-              <Switch
-                id="ui-effects"
-                checked={uiEffects}
-                onCheckedChange={(checked) => handleEffectChange("ui", checked)}
-              />
             </div>
           </CardContent>
         </Card>

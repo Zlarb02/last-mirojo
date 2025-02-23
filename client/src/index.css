@@ -59,4 +59,32 @@
   .border-themed {
     border-width: var(--border-width);
   }
+
+  .bg-screen {
+    @apply bg-background;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-screen::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: var(--bg-image, none);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    opacity: calc(1 - var(--bg-overlay-opacity, 0.75));
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-screen > * {
+    position: relative;
+    z-index: 1;
+  }
 }

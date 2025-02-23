@@ -44,7 +44,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-screen flex flex-col lg:flex-row">
       <SideMenu />
 
       <div className="flex-1 flex flex-col">

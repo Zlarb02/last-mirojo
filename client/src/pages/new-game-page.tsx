@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/header";
 
 export default function NewGamePage() {
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-screen flex">
       <SideMenu />
 
       <div className="flex-1 flex flex-col">

@@ -60,7 +60,7 @@ export function SideMenu() {
         <SheetPortal>
           <SheetContent
             side="left"
-            className="w-72 p-6 border-r shadow-xl bg-white dark:bg-gray-950"
+            className="w-72 p-6 border-r shadow-xl bg-gray-50/30 dark:bg-gray-950/30"
           >
             <SheetTitle className="text-xl font-semibold mb-4">
               {t("navigation.menu")}

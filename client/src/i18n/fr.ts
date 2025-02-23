@@ -201,6 +201,9 @@ export default {
       resetColor: "Réinitialiser la couleur",
       colorResetSuccess: "Couleur réinitialisée",
       colorResetError: "Erreur lors de la réinitialisation",
+      background: "Arrière-plan",
+      backgroundImage: "Image d'arrière-plan",
+      overlayOpacity: "Opacité du fond",
     },
   },
 };

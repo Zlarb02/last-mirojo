@@ -36,14 +36,14 @@ export const RADIO_STATIONS = [
     url: "http://ice.somafm.com/dronezone",
   },
   {
-    id: "secretagent",
-    name: "Secret Agent",
-    url: "http://ice.somafm.com/secretagent",
-  },
-  {
     id: "spacestation",
     name: "Space Station Soma",
     url: "http://ice.somafm.com/spacestation",
+  },
+  {
+    id: "secretagent",
+    name: "Secret Agent",
+    url: "http://ice.somafm.com/secretagent",
   },
 ];
 

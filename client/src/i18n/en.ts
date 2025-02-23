@@ -214,6 +214,9 @@ export default {
       resetColor: "Reset color",
       colorResetSuccess: "Color reset successfully",
       colorResetError: "Failed to reset color",
+      background: "Background",
+      backgroundImage: "Background image",
+      overlayOpacity: "Background opacity",
     },
   },
 };
