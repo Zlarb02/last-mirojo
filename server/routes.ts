@@ -272,9 +272,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const { customColors } = req.body;
+      const { customColors, themeMode, themeVariant } = req.body;
 
-      await storage.updateUserPreferences(userId, { customColors });
+      await storage.updateUserPreferences(userId, {
+        customColors,
+        themeMode,
+        themeVariant,
+      });
       res.sendStatus(200);
     } catch (error) {
       console.error("Failed to update theme preferences:", error);

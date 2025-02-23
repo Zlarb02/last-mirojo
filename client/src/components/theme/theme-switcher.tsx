@@ -15,38 +15,21 @@ import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter"; // Remplace router
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
+import { useThemeSetup } from "@/hooks/use-theme-setup";
 
 export function ThemeSwitcher() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
-  const { updateThemePreferences } = useThemePreferences(); // Ajouter cette ligne
+  const { updateThemePreferences } = useThemePreferences();
   const [mounted, setMounted] = useState(false);
   const [variant, setVariant] = useState<ThemeVariant>("classic");
-  const [, setLocation] = useLocation(); // Remplace router
+  const [, setLocation] = useLocation();
+
+  // Utiliser le nouveau hook pour le setup initial
+  useThemeSetup();
 
   useEffect(() => {
     setMounted(true);
-
-    // Restaurer le variant
-    const savedVariant = localStorage.getItem("theme-variant") as ThemeVariant;
-    if (savedVariant && themes[savedVariant]) {
-      setVariant(savedVariant);
-      applyThemeVariant(savedVariant, true); // Nouveau paramètre pour ne pas écraser les couleurs personnalisées
-    }
-
-    // Restaurer les couleurs personnalisées
-    const savedColors = localStorage.getItem("custom-colors");
-    if (savedColors) {
-      const { primary, secondary } = JSON.parse(savedColors);
-      if (primary) {
-        document.documentElement.style.setProperty("--primary", primary);
-      }
-      if (secondary) {
-        document.documentElement.style.setProperty("--secondary", secondary);
-        // Recalculer les couleurs muted basées sur la couleur secondaire
-        updateMutedColors(secondary);
-      }
-    }
   }, []);
 
   // Ajouter un useEffect pour surveiller les changements de thème
@@ -79,21 +62,17 @@ export function ThemeSwitcher() {
     const config = themes[variant];
     const root = document.documentElement;
 
-    // Appliquer les variables de base (radius, borderWidth)
     root.style.setProperty("--radius", config.variables.radius);
     root.style.setProperty("--border-width", config.variables.borderWidth);
 
-    // Appliquer les couleurs par défaut seulement si keepCustomColors est false
     if (!keepCustomColors) {
       const savedColors = localStorage.getItem("custom-colors");
       const customColors = savedColors ? JSON.parse(savedColors) : {};
 
-      // Appliquer primary seulement si pas de couleur personnalisée
       if (!customColors.primary) {
         root.style.setProperty("--primary", config.variables.defaults.primary);
       }
 
-      // Appliquer secondary seulement si pas de couleur personnalisée
       if (!customColors.secondary) {
         root.style.setProperty(
           "--secondary",

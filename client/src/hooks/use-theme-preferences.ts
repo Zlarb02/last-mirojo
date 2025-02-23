@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
 import { themes } from "@/lib/themes";
@@ -6,6 +6,7 @@ import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
 
 export function useThemePreferences() {
   const { theme, setTheme } = useTheme();
+  const queryClient = useQueryClient();
 
   interface ThemePreferences {
     themeVariant?: keyof typeof themes;
@@ -33,14 +34,27 @@ export function useThemePreferences() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(preferences),
+        body: JSON.stringify({
+          themeMode: preferences.themeMode,
+          themeVariant: preferences.themeVariant,
+          customColors: preferences.customColors,
+        }),
       });
       if (!res.ok) throw new Error("Failed to update theme preferences");
+    },
+    onSuccess: () => {
+      // Rafraîchir les données après une mise à jour réussie
+      queryClient.invalidateQueries({ queryKey: ["theme-preferences"] });
     },
   });
 
   useEffect(() => {
     if (!preferences) return;
+
+    // Appliquer le themeMode s'il existe
+    if (preferences.themeMode) {
+      setTheme(preferences.themeMode);
+    }
 
     // Appliquer le variant
     if (preferences.themeVariant && themes[preferences.themeVariant]) {
