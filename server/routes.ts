@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { generateResponse } from "./services/groq";
+import { userPreferences } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   setupAuth(app);
@@ -263,6 +264,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     user.language = req.body.language;
     res.sendStatus(200);
+  });
+
+  // Nouvelle route pour les préférences de thème
+  app.post("/api/user/theme-preferences", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const { customColors } = req.body;
+
+      await storage.updateUserPreferences(userId, { customColors });
+      res.sendStatus(200);
+    } catch (error) {
+      console.error("Failed to update theme preferences:", error);
+      res.status(500).json({ error: "Failed to update theme preferences" });
+    }
+  });
+
+  // Ajouter cette nouvelle route pour récupérer les préférences de thème
+  app.get("/api/user/theme-preferences", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const preferences = await storage.getUserPreferences(req.user!.id);
+      res.json(preferences);
+    } catch (error) {
+      console.error("Failed to fetch theme preferences:", error);
+      res.status(500).json({ error: "Failed to fetch theme preferences" });
+    }
   });
 
   app.get("/api/games", async (req, res) => {

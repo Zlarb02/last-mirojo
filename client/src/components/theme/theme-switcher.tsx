@@ -7,17 +7,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Palette, Moon, Sun, Settings } from "lucide-react"; // Ajoutez cet import
+import { Palette, Moon, Sun, Settings, Trash2 } from "lucide-react"; // Ajoutez cet import
 import { themes, type ThemeVariant } from "@/lib/themes";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter"; // Remplace router
+import { useThemePreferences } from "@/hooks/use-theme-preferences";
 
 export function ThemeSwitcher() {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
+  const { updateThemePreferences } = useThemePreferences(); // Ajouter cette ligne
   const [mounted, setMounted] = useState(false);
   const [variant, setVariant] = useState<ThemeVariant>("classic");
   const [, setLocation] = useLocation(); // Remplace router
@@ -102,6 +104,7 @@ export function ThemeSwitcher() {
 
     localStorage.setItem("theme-variant", variant);
     setVariant(variant);
+    updateThemePreferences({ themeVariant: variant });
   };
 
   const setCustomColor = (type: "primary" | "secondary") => {
@@ -176,9 +179,37 @@ export function ThemeSwitcher() {
           })
         );
       }
+
+      // Mettre à jour en base de données
+      updateThemePreferences({ customColors });
     });
 
     input.click();
+  };
+
+  const resetCustomColor = async (type: "primary" | "secondary") => {
+    // Récupérer la configuration du thème actuel
+    const config = themes[variant];
+    if (!config) return;
+
+    // Supprimer la couleur personnalisée du localStorage
+    const savedColors = localStorage.getItem("custom-colors");
+    const customColors = savedColors ? JSON.parse(savedColors) : {};
+    delete customColors[type];
+    localStorage.setItem("custom-colors", JSON.stringify(customColors));
+
+    // Réappliquer la couleur par défaut du thème
+    document.documentElement.style.setProperty(
+      `--${type}`,
+      config.variables.defaults[type]
+    );
+
+    if (type === "secondary") {
+      updateMutedColors(config.variables.defaults.secondary);
+    }
+
+    // Mise à jour en base de données
+    updateThemePreferences({ customColors });
   };
 
   // Nouvelle fonction utilitaire pour mettre à jour les couleurs muted
@@ -198,6 +229,11 @@ export function ThemeSwitcher() {
     );
   };
 
+  const handleThemeChange = (mode: "light" | "dark" | "system") => {
+    setTheme(mode);
+    updateThemePreferences({ themeMode: mode });
+  };
+
   if (!mounted) return null;
 
   return (
@@ -215,11 +251,11 @@ export function ThemeSwitcher() {
         avoidCollisions={true}
       >
         <DropdownMenuLabel>{t("theme.mode")}</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+        <DropdownMenuItem onClick={() => handleThemeChange("light")}>
           <Sun className="h-4 w-4 mr-2" />
           {t("theme.light")}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
           <Moon className="h-4 w-4 mr-2" />
           {t("theme.dark")}
         </DropdownMenuItem>
@@ -235,13 +271,49 @@ export function ThemeSwitcher() {
         ))}
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{t("theme.colors")}</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => setCustomColor("primary")}>
-          <div className="w-4 h-4 rounded mr-2 bg-primary" />
-          {t("theme.primaryColor")}
+        <DropdownMenuItem>
+          <div className="flex items-center justify-between w-full">
+            <div
+              className="flex items-center"
+              onClick={() => setCustomColor("primary")}
+            >
+              <div className="w-4 h-4 rounded mr-2 bg-primary" />
+              {t("theme.primaryColor")}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-4 w-4 ml-2 hover:bg-destructive/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                resetCustomColor("primary");
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setCustomColor("secondary")}>
-          <div className="w-4 h-4 rounded mr-2 bg-secondary" />
-          {t("theme.secondaryColor")}
+        <DropdownMenuItem>
+          <div className="flex items-center justify-between w-full">
+            <div
+              className="flex items-center"
+              onClick={() => setCustomColor("secondary")}
+            >
+              <div className="w-4 h-4 rounded mr-2 bg-secondary" />
+              {t("theme.secondaryColor")}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-4 w-4 ml-2 hover:bg-destructive/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                resetCustomColor("secondary");
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/settings#appearance")}>

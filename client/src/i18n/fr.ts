@@ -37,7 +37,7 @@ export default {
         maxValue: "Valeur maximale",
         color: "Couleur",
         value: "Valeur",
-        addStat: "Ajouter une statistique"
+        addStat: "Ajouter une statistique",
       },
       events: {
         title: "Journal des Événements",
@@ -59,7 +59,7 @@ export default {
         name: "Nom du personnage",
         noName: "Sans nom",
         description: "Description",
-        noDescription: "Aucune description"
+        noDescription: "Aucune description",
       },
       quests: {
         title: "Quêtes",
@@ -70,14 +70,14 @@ export default {
         status: {
           notStarted: "Non commencée",
           active: "En cours",
-          completed: "Terminée"
-        }
+          completed: "Terminée",
+        },
       },
       inventory: {
         title: "Inventaire",
         empty: "Inventaire vide",
         add: "Ajouter",
-        newItem: "Nouvel objet"
+        newItem: "Nouvel objet",
       },
       newGame: "Créer une nouvelle partie",
       enterGameName: "Entrez le nom de votre partie...",
@@ -118,15 +118,15 @@ export default {
           unlimitedGames: "Parties sauvegardées illimitées",
           advancedAI: "IA avancée",
           prioritySupport: "Support prioritaire",
-          exclusiveContent: "Contenu exclusif"
+          exclusiveContent: "Contenu exclusif",
         },
         management: {
           title: "Gestion de l'abonnement",
           cancel: "Annuler l'abonnement",
           renew: "Renouvellement automatique",
           nextBilling: "Prochaine facturation",
-          cardEnding: "Carte se terminant par"
-        }
+          cardEnding: "Carte se terminant par",
+        },
       },
       appearance: {
         title: "Apparence",
@@ -137,29 +137,31 @@ export default {
         uiEffectsDescription: "Activer les effets visuels de l'interface",
         comingSoon: "Options d'apparence à venir",
         videoQuality: "Qualité de la vidéo",
-        videoQualityDescription: "Ajuster la qualité de la vidéo d'arrière-plan",
+        videoQualityDescription:
+          "Ajuster la qualité de la vidéo d'arrière-plan",
         animationSpeed: "Vitesse des animations",
         animationSpeedDescription: "Ajuster la vitesse des effets visuels",
         quality: {
           low: "Basse",
           medium: "Moyenne",
-          high: "Haute"
+          high: "Haute",
         },
         speed: {
           slow: "Lente",
           normal: "Normale",
-          fast: "Rapide"
-        }
+          fast: "Rapide",
+        },
       },
       notifications: {
         title: "Notifications",
-        permission: "Autorisez les notifications pour recevoir des mises à jour du jeu",
+        permission:
+          "Autorisez les notifications pour recevoir des mises à jour du jeu",
         enable: "Activer les notifications",
         enabled: "Notifications activées",
         disabled: "Notifications désactivées",
         game: "Notifications de jeu",
-        sound: "Effets sonores"
-      }
+        sound: "Effets sonores",
+      },
     },
     myGames: {
       error: "Erreur lors du chargement des parties",
@@ -172,9 +174,10 @@ export default {
       startNew: "Commencer une nouvelle aventure",
       create: "Créer",
       deleteTitle: "Supprimer la partie",
-      deleteDescription: "Êtes-vous sûr de vouloir supprimer cette partie ? Cette action est irréversible.",
+      deleteDescription:
+        "Êtes-vous sûr de vouloir supprimer cette partie ? Cette action est irréversible.",
       deleted: "Partie supprimée avec succès",
-      deleteFailed: "Échec de la suppression de la partie"
+      deleteFailed: "Échec de la suppression de la partie",
     },
     common: {
       toggleTheme: "Changer le thème",
@@ -194,7 +197,10 @@ export default {
       colors: "Couleurs",
       primaryColor: "Couleur primaire",
       secondaryColor: "Couleur secondaire",
-      moreSettings: "Plus de paramètres d'apparence"
-    }
+      moreSettings: "Plus de paramètres d'apparence",
+      resetColor: "Réinitialiser la couleur",
+      colorResetSuccess: "Couleur réinitialisée",
+      colorResetError: "Erreur lors de la réinitialisation",
+    },
   },
 };

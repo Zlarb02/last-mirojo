@@ -211,6 +211,9 @@ export default {
       primaryColor: "Primary color",
       secondaryColor: "Secondary color",
       moreSettings: "More appearance settings",
+      resetColor: "Reset color",
+      colorResetSuccess: "Color reset successfully",
+      colorResetError: "Failed to reset color",
     },
   },
 };

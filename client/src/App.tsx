@@ -7,13 +7,17 @@ import HomePage from "@/pages/home-page";
 import AuthPage from "@/pages/auth-page";
 import MyGamesPage from "@/pages/my-games-page";
 import SettingsPage from "@/pages/settings-page";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { ProtectedRoute } from "./lib/protected-route";
 import { ThemeProvider } from "next-themes";
 import "./i18n/config";
 import NewGamePage from "./pages/new-game-page";
+import { useThemePreferences } from "./hooks/use-theme-preferences";
 
 function Router() {
+  const { user } = useAuth();
+  useThemePreferences(); // Ajouter cette ligne
+
   return (
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />

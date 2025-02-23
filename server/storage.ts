@@ -1,4 +1,11 @@
-import { User, InsertUser, GameState, Game, Message } from "@shared/schema";
+import {
+  User,
+  InsertUser,
+  GameState,
+  Game,
+  Message,
+  userPreferences,
+} from "@shared/schema";
 import { db, users, gameStates, games as gamesTable } from "./db";
 import { asc, desc, eq } from "drizzle-orm";
 import session from "express-session";
@@ -166,7 +173,6 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values({
         ...insertUser,
-        currentGameState: null,
         language: insertUser.language || "en",
       })
       .returning();
@@ -303,6 +309,42 @@ export class DatabaseStorage implements IStorage {
     }
 
     return updatedGame;
+  }
+
+  async updateUserPreferences(
+    userId: string,
+    data: {
+      customColors?: { primary?: string; secondary?: string } | null;
+      themeVariant?: string;
+      themeMode?: string;
+    }
+  ): Promise<void> {
+    await db
+      .update(userPreferences)
+      .set({
+        customColors: data.customColors,
+        themeVariant: data.themeVariant,
+        themeMode: data.themeMode,
+        updatedAt: new Date(),
+      })
+      .where(eq(userPreferences.userId, userId));
+  }
+
+  async getUserPreferences(userId: string) {
+    const [preferences] = await db
+      .select({
+        themeVariant: userPreferences.themeVariant,
+        themeMode: userPreferences.themeMode,
+        customColors: userPreferences.customColors,
+      })
+      .from(userPreferences)
+      .where(eq(userPreferences.userId, userId));
+
+    return {
+      themeVariant: preferences?.themeVariant || "classic",
+      themeMode: preferences?.themeMode || "system",
+      customColors: preferences?.customColors || null,
+    };
   }
 }
 

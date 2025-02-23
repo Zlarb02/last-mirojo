@@ -6,8 +6,21 @@ export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
-  currentGameState: jsonb("current_game_state"),
   language: text("language").default("en"),
+});
+
+export const userPreferences = pgTable("user_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  themeVariant: text("theme_variant").default("classic").notNull(),
+  themeMode: text("theme_mode").default("system").notNull(),
+  themeColors: jsonb("theme_colors").default(
+    '{"primary": null, "secondary": null}'
+  ),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  customColors: jsonb("custom_colors"),
 });
 
 export interface StatConfig {
@@ -38,7 +51,7 @@ export const gameStates = pgTable("game_states", {
   characterName: text("character_name"),
   characterDescription: text("character_description"),
   mainQuest: jsonb("main_quest"),
-  sideQuests: jsonb("side_quests").default("[]").notNull(), // Changed this line
+  sideQuests: jsonb("side_quests").default("[]").notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users);
@@ -51,12 +64,12 @@ export interface Message {
 
 export const games = pgTable("games", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.id, {
-    onDelete: "cascade",
-  }),
-  gameStateId: uuid("game_state_id").references(() => gameStates.id, {
-    onDelete: "cascade",
-  }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  gameStateId: uuid("game_state_id")
+    .notNull()
+    .references(() => gameStates.id, { onDelete: "cascade" }),
   name: text("name").default("").notNull(),
   description: text("description").default(""),
   conversation: jsonb("conversation")
