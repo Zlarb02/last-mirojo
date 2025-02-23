@@ -3,11 +3,13 @@ import { useLocation } from "wouter";
 import { useHash } from "@/hooks/use-hash";
 import { SideMenu } from "@/components/layout/side-menu";
 import { Header } from "@/components/layout/header";
-import { SettingsNav } from "@/components/settings/settings-nav";
+import { settingsSections } from "@/lib/settings-navigation";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
 import { LanguageSettings } from "@/components/settings/language-settings";
 import { NotificationSettings } from "@/components/settings/notification-settings";
 import { SubscriptionSettings } from "@/components/settings/subscription-settings";
+import { SettingsNav } from "@/components/settings/settings-nav";
+import { ChevronRight } from "lucide-react";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -16,12 +18,17 @@ export default function SettingsPage() {
   const hash = useHash();
   const [section, subsection] = hash.split("-");
 
+  // Trouver le titre de la section et sous-section actuelle
+  const currentSection = settingsSections.find((s) => s.id === section);
+  const currentSubsection = currentSection?.subsections?.find(
+    (s) => s.id === subsection
+  );
+
   const renderSettingsContent = () => {
-    // Gestion des sous-sections
     if (section === "appearance") {
       return (
         <AppearanceSettings
-          section={subsection as "theme" | "colors" | "style"}
+          section={subsection as "theme" | "colors" | "style" | "background"}
         />
       );
     }
@@ -32,7 +39,6 @@ export default function SettingsPage() {
       );
     }
 
-    // Sections principales
     switch (section) {
       case "language":
         return <LanguageSettings />;
@@ -44,26 +50,45 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-screen flex flex-col lg:flex-row">
+    <>
       <SideMenu />
+      <div className="min-h-screen bg-screen flex flex-col">
+        <div className="flex-1 flex flex-col">
+          <Header />
+          <main className="flex-1">
+            <div className="p-4 sm:p-8">
+              {/* Fil d'Ariane */}
+              <div className="mb-6 flex items-center text-sm text-muted-foreground">
+                <span>{t("settings.title")}</span>
+                {currentSection && (
+                  <>
+                    <ChevronRight className="h-4 w-4 mx-1" />
+                    <span>{t(currentSection.titleKey)}</span>
+                  </>
+                )}
+                {currentSubsection && (
+                  <>
+                    <ChevronRight className="h-4 w-4 mx-1" />
+                    <span>{t(currentSubsection.titleKey)}</span>
+                  </>
+                )}
+              </div>
 
-      <div className="flex-1 flex flex-col">
-        <Header />
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Navigation verticale (mobile et desktop) */}
+                <div className="w-full lg:w-64 flex-shrink-0">
+                  <SettingsNav />
+                </div>
 
-        <main className="flex-1 flex flex-col lg:flex-row">
-          <SettingsNav />
-
-          <div className="flex-1 p-4 sm:p-8">
-            <h1 className="text-2xl font-bold mb-6">
-              {t("settings.title", "Réglages")}
-            </h1>
-
-            <div className="max-w-3xl mx-auto lg:mx-0">
-              {renderSettingsContent()}
+                {/* Contenu principal */}
+                <div className="flex-1">
+                  <div className="max-w-3xl">{renderSettingsContent()}</div>
+                </div>
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

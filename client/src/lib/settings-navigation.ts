@@ -19,7 +19,8 @@ export const settingsSections: SettingsSection[] = [
       { id: "theme", titleKey: "theme.mode" },
       { id: "colors", titleKey: "theme.colors" },
       { id: "style", titleKey: "theme.style" },
-    ]
+      { id: "background", titleKey: "theme.background.title" },
+    ],
   },
   {
     id: "subscription",
@@ -28,16 +29,16 @@ export const settingsSections: SettingsSection[] = [
     subsections: [
       { id: "plan", titleKey: "settings.subscription.currentPlan" },
       { id: "billing", titleKey: "settings.subscription.billing" },
-    ]
+    ],
   },
   {
     id: "notifications",
-    titleKey: "settings.notifications.title", 
+    titleKey: "settings.notifications.title",
     icon: "bell",
   },
   {
     id: "language",
     titleKey: "settings.language",
     icon: "globe",
-  }
+  },
 ];

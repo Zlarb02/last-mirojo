@@ -17,7 +17,7 @@ import { MusicPlayerProvider } from "@/contexts/music-player-context";
 
 function Router() {
   const { user } = useAuth();
-  useThemePreferences(); // Ajouter cette ligne
+  useThemePreferences();
 
   return (
     <Switch>

@@ -2,7 +2,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
-import { LogOut, Music2 } from "lucide-react";
+import { LogOut, Music2, Pin } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme/theme-switcher";
 import logoPath from "@/assets/logo.png";
 import { MusicPlayer } from "@/components/player/music-player";
@@ -12,10 +12,15 @@ export function Header() {
   const { logoutMutation } = useAuth();
   const { t } = useTranslation();
   const [showMusicPlayer, setShowMusicPlayer] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
 
   return (
     <>
-      <header className="border-b">
+      <header
+        className={`border-b bg-muted/50 backdrop-blur  w-full ${
+          isPinned ? "fixed top-0 left-0 z-50" : ""
+        }`}
+      >
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 ml-16 sm:mx-auto">
             <img
@@ -36,6 +41,15 @@ export function Header() {
             >
               <Music2 className="h-5 w-5" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsPinned(!isPinned)}
+              title={t("header.pin")}
+              className={isPinned ? "text-primary" : ""}
+            >
+              <Pin className={`h-5 w-5 ${isPinned ? "rotate-45" : ""}`} />
+            </Button>
             <LanguageSwitcher />
             <ThemeSwitcher />
             <Button
@@ -49,6 +63,7 @@ export function Header() {
           </div>
         </div>
       </header>
+      {isPinned && <div className="h-[72px]" />}
       {showMusicPlayer && (
         <MusicPlayer onClose={() => setShowMusicPlayer(false)} />
       )}

@@ -317,6 +317,12 @@ export class DatabaseStorage implements IStorage {
       customColors?: { primary?: string; secondary?: string } | null;
       themeVariant?: string;
       themeMode?: string;
+      background?: {
+        type: "none" | "image" | "video";
+        url: string;
+        overlay: string;
+        useLightTheme: boolean;
+      };
     }
   ): Promise<void> {
     await db
@@ -325,6 +331,7 @@ export class DatabaseStorage implements IStorage {
         customColors: data.customColors,
         themeVariant: data.themeVariant,
         themeMode: data.themeMode,
+        background: data.background,
         updatedAt: new Date(),
       })
       .where(eq(userPreferences.userId, userId));
@@ -336,6 +343,7 @@ export class DatabaseStorage implements IStorage {
         themeVariant: userPreferences.themeVariant,
         themeMode: userPreferences.themeMode,
         customColors: userPreferences.customColors,
+        background: userPreferences.background,
       })
       .from(userPreferences)
       .where(eq(userPreferences.userId, userId));
@@ -344,6 +352,12 @@ export class DatabaseStorage implements IStorage {
       themeVariant: preferences?.themeVariant || "classic",
       themeMode: preferences?.themeMode || "system",
       customColors: preferences?.customColors || null,
+      background: preferences?.background || {
+        type: "none",
+        url: "",
+        overlay: "0.85",
+        useLightTheme: false,
+      },
     };
   }
 }

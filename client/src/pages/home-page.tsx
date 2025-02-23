@@ -11,10 +11,10 @@ import { useLocation } from "wouter";
 // Simplifié - plus besoin de gérer le gameId
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-screen">
-      <div className="flex h-screen">
-        <SideMenu />
-        <div className="flex-1 flex flex-col ">
+    <>
+      <SideMenu />
+      <div className="min-h-screen bg-screen">
+        <div className="flex flex-col h-screen">
           <Header />
           <main className="flex-1 container mx-auto p-4">
             <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-4">
@@ -27,6 +27,6 @@ export default function HomePage() {
           </main>
         </div>
       </div>
-    </div>
+    </>
   );
 }

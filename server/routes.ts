@@ -449,6 +449,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/youtube/search", async (req, res) => {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    const query = req.query.q as string;
+
+    if (!query) {
+      return res.status(400).json({ error: "Query parameter is required" });
+    }
+
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=9&q=${encodeURIComponent(
+          query
+        )}&type=video&key=${apiKey}`
+      );
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("YouTube API error:", error);
+      res.status(500).json({ error: "Failed to fetch YouTube results" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

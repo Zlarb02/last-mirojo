@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import { useEffect } from "react";
+import { useLayoutEffect } from "react"; // Changer useEffect en useLayoutEffect
 import { themes } from "@/lib/themes";
 import {
   getTextColor,
@@ -52,13 +52,21 @@ export function useThemePreferences() {
     },
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!preferences) return;
+
+    // Ajouter la classe no-transition temporairement
+    document.documentElement.classList.add("no-transition");
 
     // Appliquer le themeMode s'il existe
     if (preferences.themeMode) {
       setTheme(preferences.themeMode);
     }
+
+    // Retirer la classe après le changement
+    requestAnimationFrame(() => {
+      document.documentElement.classList.remove("no-transition");
+    });
 
     // Appliquer le variant
     if (preferences.themeVariant && themes[preferences.themeVariant]) {

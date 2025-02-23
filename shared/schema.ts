@@ -18,6 +18,9 @@ export const userPreferences = pgTable("user_preferences", {
   themeColors: jsonb("theme_colors").default(
     '{"primary": null, "secondary": null}'
   ),
+  background: jsonb("background").default(
+    '{"type": "none", "url": "", "overlay": "0.85"}' // Supprimer useLightTheme
+  ),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   customColors: jsonb("custom_colors"),
