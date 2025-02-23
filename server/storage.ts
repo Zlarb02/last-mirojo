@@ -7,11 +7,14 @@ import connectPg from "connect-pg-simple";
 const PostgresSessionStore = connectPg(session);
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;  // Changed from number to string
+  getUser(id: string): Promise<User | undefined>; // Changed from number to string
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  updateGameStateByGameId(gameId: string, gameState: Partial<GameState>): Promise<void>;  // Changed from number to string
-  getGameStateByGameId(gameId: string): Promise<GameState | undefined>;  // Changed from number to string
+  updateGameStateByGameId(
+    gameId: string,
+    gameState: Partial<GameState>
+  ): Promise<void>; // Changed from number to string
+  getGameStateByGameId(gameId: string): Promise<GameState | undefined>; // Changed from number to string
   sessionStore: session.Store;
 }
 
@@ -25,7 +28,8 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async createInitialGameState(userId: string): Promise<GameState> {  // Changed from number to string
+  async createInitialGameState(userId: string): Promise<GameState> {
+    // Changed from number to string
     const initialGameState = {
       userId,
       stats: [
@@ -35,8 +39,8 @@ export class DatabaseStorage implements IStorage {
           config: {
             type: "progress" as const, // Forcer le type littéral
             max: 100,
-            color: "#ef4444"
-          }
+            color: "#ef4444",
+          },
         },
         {
           name: "Mana",
@@ -44,16 +48,16 @@ export class DatabaseStorage implements IStorage {
           config: {
             type: "progress" as const, // Forcer le type littéral
             max: 100,
-            color: "#3b82f6"
-          }
+            color: "#3b82f6",
+          },
         },
         {
           name: "Niveau",
           value: 1,
           config: {
-            type: "number" as const // Forcer le type littéral
-          }
-        }
+            type: "number" as const, // Forcer le type littéral
+          },
+        },
       ],
       inventory: [],
       eventLog: [],
@@ -62,7 +66,7 @@ export class DatabaseStorage implements IStorage {
       mainQuest: {
         title: "",
         description: "",
-        status: "Not started" as const
+        status: "Not started" as const,
       },
       sideQuests: [],
       savedAt: new Date().toISOString(),
@@ -78,7 +82,7 @@ export class DatabaseStorage implements IStorage {
 
   async saveGame(data: {
     user_id: string;
-    name: string;  // S'assurer que le name est utilisé
+    name: string; // S'assurer que le name est utilisé
     description: string;
     conversation: { messages: Message[]; timestamp: string };
     gameState?: Partial<GameState>;
@@ -169,7 +173,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getGameStateByGameId(gameStateId: string): Promise<GameState | undefined> {  // Changed from number to string
+  async getGameStateByGameId(
+    gameStateId: string
+  ): Promise<GameState | undefined> {
+    // Changed from number to string
     const [gameState] = await db
       .select()
       .from(gameStates)
@@ -179,7 +186,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateGameStateByGameId(
-    gameStateId: string,  // Changed from number to string
+    gameStateId: string, // Changed from number to string
     gameState: Partial<GameState>
   ): Promise<void> {
     await db
@@ -212,7 +219,10 @@ export class DatabaseStorage implements IStorage {
     return results;
   }
 
-  async getLastConversation(userId: string): Promise<{ messages: Message[]; timestamp: string } | null> {  // Changed from number to string
+  async getLastConversation(
+    userId: string
+  ): Promise<{ messages: Message[]; timestamp: string } | null> {
+    // Changed from number to string
     const [lastGame] = await db
       .select({
         id: gamesTable.id,
@@ -233,7 +243,8 @@ export class DatabaseStorage implements IStorage {
     return lastGame?.conversation || null;
   }
 
-  async getGameById(gameId: string): Promise<Game | undefined> {  // Changed from number to string
+  async getGameById(gameId: string): Promise<Game | undefined> {
+    // Changed from number to string
     const [result] = await db
       .select({
         id: gamesTable.id,
@@ -252,7 +263,8 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async deleteGame(gameId: string): Promise<Game | undefined> {  // Changed from number to string
+  async deleteGame(gameId: string): Promise<Game | undefined> {
+    // Changed from number to string
     const [deletedGame] = await db
       .delete(gamesTable)
       .where(eq(gamesTable.id, gameId))

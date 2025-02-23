@@ -26,19 +26,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           messages: conversation.messages,
           timestamp: conversation.timestamp || new Date().toISOString(),
         },
-        gameState: gameState ? {
-          ...gameState,
-          userId,
-        } : undefined,
-        name: name,
-        description: description,
+        gameState: gameState
+          ? {
+              ...gameState,
+              userId,
+            }
+          : undefined,
+        name: name || "",
+        description: description || "",
       });
 
       res.json(savedGame);
     } catch (error) {
       console.error("Failed to save game:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to save game"
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to save game",
       });
     }
   });
@@ -95,9 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user!.id;
       const { stats, inventory, eventLog } = req.body;
-      const gameId = req.query.gameId
-        ? req.query.gameId as string
-        : null;
+      const gameId = req.query.gameId ? (req.query.gameId as string) : null;
 
       if (gameId) {
         // Mise à jour d'une partie existante
@@ -361,6 +361,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Failed to update game:", error);
       res.status(500).json({ error: "Failed to update game" });
+    }
+  });
+
+  app.patch("/api/games/:id/name", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const gameId = req.params.id;
+      const { name } = req.body;
+
+      const game = await storage.getGameById(gameId);
+      if (!game || game.userId !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+
+      const updatedGame = await storage.updateGame(gameId, {
+        conversation: game.conversation,
+        name,
+      });
+
+      res.json(updatedGame);
+    } catch (error) {
+      console.error("Failed to rename game:", error);
+      res.status(500).json({ error: "Failed to rename game" });
+    }
+  });
+
+  // Ajouter cette nouvelle route pour la description
+  app.patch("/api/games/:id/description", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+
+    try {
+      const userId = req.user!.id;
+      const gameId = req.params.id;
+      const { description } = req.body;
+
+      const game = await storage.getGameById(gameId);
+      if (!game || game.userId !== userId) {
+        return res.status(404).json({ error: "Game not found" });
+      }
+
+      const updatedGame = await storage.updateGame(gameId, {
+        conversation: game.conversation,
+        description,
+      });
+
+      res.json(updatedGame);
+    } catch (error) {
+      console.error("Failed to update description:", error);
+      res.status(500).json({ error: "Failed to update description" });
     }
   });
 

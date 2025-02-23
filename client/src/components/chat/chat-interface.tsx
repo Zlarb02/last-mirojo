@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Save, Send, Loader2, PowerIcon } from "lucide-react";
+import { Save, Send, Loader2, Plus } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Message, SavedConversation } from "@/types/chat";
@@ -404,6 +404,61 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
     }
   };
 
+  const handleSaveNewGame = async () => {
+    if (messages.length === 0) return;
+
+    try {
+      // Créer une nouvelle partie avec les messages existants
+      const endpoint = "/api/game/save";
+      const payload = {
+        conversation: {
+          messages: messages,
+          timestamp: new Date().toISOString(),
+        },
+        gameState: {
+          stats: gameState.stats || [],
+          inventory: Array.isArray(gameState.inventory)
+            ? gameState.inventory
+            : [],
+          eventLog: Array.isArray(gameState.eventLog) ? gameState.eventLog : [],
+          characterName: gameState.characterName || "",
+          characterDescription: gameState.characterDescription || "",
+          mainQuest: gameState.mainQuest || null,
+          sideQuests: Array.isArray(gameState.sideQuests)
+            ? gameState.sideQuests
+            : null,
+          savedAt: new Date().toISOString(),
+        },
+        name: `${currentName || gameName} (Copy)`,
+        description: "",
+      };
+
+      const res = await apiRequest("POST", endpoint, payload);
+      const savedGame = await res.json();
+
+      if (savedGame?.id) {
+        // Rediriger vers la nouvelle partie
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set("gameId", savedGame.id);
+        window.location.href = newUrl.toString(); // Utiliser window.location.href pour forcer un rechargement
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+
+      toast({
+        title: t("success"),
+        description: t("game.chat.savedNew"),
+      });
+    } catch (error) {
+      console.error("Failed to save new game:", error);
+      toast({
+        title: t("error"),
+        description: t("game.chat.saveNewFailed"),
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleNewGameSetup = async (confirmed: boolean) => {
     if (!confirmed) {
       setShowConfirmDialog(false);
@@ -497,13 +552,14 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         <CardTitle>{currentName || gameName || t("game.adventure")}</CardTitle>
         <div className="flex gap-2 relative z-10">
           <Button
-            onClick={() => handleSaveConversation()}
+            onClick={handleSaveNewGame}
             type="button"
             disabled={messages.length === 0 || isLoading}
             className="relative bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all"
-            title={t("game.chat.save")}
+            title={t("game.chat.saveNew")}
           >
-            <Save className="h-4 w-4" />
+            <Plus className="h-4 w-4 ml-1" />
+            <Save className="h-4 w-4 mr-1" />
           </Button>
         </div>
       </CardHeader>

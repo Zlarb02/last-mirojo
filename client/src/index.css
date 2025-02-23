@@ -2,16 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {  
+@layer base {
   :root {
     --radius: 0.5rem;
     --border-width: 1px;
     --popover: 0 0% 100%;
-    }
+    --alert: 0 0% 100%;
+  }
 
-    .dark {
-      --popover: 0 0% 0%;
-    }
+  .dark {
+    --popover: 0 0% 0%;
+    --alert: 0 0% 0%;
+  }
 
   * {
     @apply border-border;
@@ -52,16 +54,10 @@
     focus:border-destructive;
   }
 
-
-
-    
-
-  
-  
   .rounded-themed {
     border-radius: var(--radius);
   }
-  
+
   .border-themed {
     border-width: var(--border-width);
   }

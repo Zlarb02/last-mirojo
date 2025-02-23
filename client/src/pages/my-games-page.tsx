@@ -21,13 +21,14 @@ import { useTranslation } from "react-i18next";
 import { SideMenu } from "@/components/layout/side-menu";
 import { Header } from "@/components/layout/header";
 import { useGames } from "@/hooks/use-games";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Edit2, Plus } from "lucide-react";
 import { navigate } from "wouter/use-browser-location";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AIMessage } from "@/components/chat/ai-message";
+import { Input } from "@/components/ui/input";
 
 export default function MyGamesPage() {
   const { t } = useTranslation();
@@ -56,8 +57,84 @@ export default function MyGamesPage() {
     },
   });
 
+  const renameMutation = useMutation({
+    mutationFn: async ({
+      gameId,
+      name,
+      description,
+    }: {
+      gameId: string;
+      name: string;
+      description: string;
+    }) => {
+      await apiRequest("PATCH", `/api/games/${gameId}/name`, {
+        name,
+        description,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      toast({
+        title: t("success"),
+        description: t("myGames.renamed"),
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to rename game:", error);
+      toast({
+        title: t("error"),
+        description: t("myGames.renameFailed"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateDescriptionMutation = useMutation({
+    mutationFn: async ({
+      gameId,
+      description,
+    }: {
+      gameId: string;
+      description: string;
+    }) => {
+      await apiRequest("PATCH", `/api/games/${gameId}/description`, {
+        description,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["games"] });
+      toast({
+        title: t("success"),
+        description: t("myGames.descriptionUpdated"),
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to update description:", error);
+      toast({
+        title: t("error"),
+        description: t("myGames.descriptionUpdateFailed"),
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDeleteGame = async (gameId: string) => {
     deleteMutation.mutate(gameId);
+  };
+
+  const handleRenameGame = async (
+    gameId: string,
+    name: string,
+    description: string
+  ) => {
+    renameMutation.mutate({ gameId, name, description });
+  };
+
+  const handleUpdateDescription = async (
+    gameId: string,
+    description: string
+  ) => {
+    updateDescriptionMutation.mutate({ gameId, description });
   };
 
   function formatDateTime(dateString: string | Date | undefined | null) {
@@ -115,9 +192,60 @@ export default function MyGamesPage() {
             {games.map((game) => (
               <Card key={game.id}>
                 <CardHeader>
-                  <CardTitle>
-                    {game.name || t("myGames.untitledGame", "Partie sans nom")}
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CardTitle>
+                        {game.name ||
+                          t("myGames.untitledGame", "Partie sans nom")}
+                      </CardTitle>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 p-0"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {t("myGames.rename")}
+                            </AlertDialogTitle>
+                          </AlertDialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Input
+                                defaultValue={game.name}
+                                placeholder={t("myGames.renamePlaceholder")}
+                                id={`rename-${game.id}`}
+                              />
+                            </div>
+                          </div>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>
+                              {t("common.cancel")}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                const nameInput = document.getElementById(
+                                  `rename-${game.id}`
+                                ) as HTMLInputElement;
+                                handleRenameGame(
+                                  game.id,
+                                  nameInput.value,
+                                  game.description
+                                );
+                              }}
+                            >
+                              {t("common.save")}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
                   <CardDescription>
                     <span className="block space-y-1">
                       <span className="block">
@@ -128,6 +256,69 @@ export default function MyGamesPage() {
                         {t("myGames.lastPlayed", "Dernière modification le")}{" "}
                         {formatDateTime(game.updatedAt)}
                       </span>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <span className="block mt-2 flex items-center gap-2 cursor-pointer hover:opacity-80">
+                            {game.description ? (
+                              <>
+                                <Edit2 className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">
+                                  {game.description}
+                                </span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground italic">
+                                  {t(
+                                    "myGames.noDescription",
+                                    "Ajouter une description"
+                                  )}
+                                </span>
+                              </>
+                            )}
+                          </span>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              {t(
+                                "myGames.editDescription",
+                                "Modifier la description"
+                              )}
+                            </AlertDialogTitle>
+                          </AlertDialogHeader>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Input
+                                defaultValue={game.description}
+                                placeholder={t(
+                                  "myGames.descriptionPlaceholder"
+                                )}
+                                id={`description-${game.id}`}
+                              />
+                            </div>
+                          </div>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>
+                              {t("common.cancel")}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => {
+                                const descInput = document.getElementById(
+                                  `description-${game.id}`
+                                ) as HTMLInputElement;
+                                handleUpdateDescription(
+                                  game.id,
+                                  descInput.value
+                                );
+                              }}
+                            >
+                              {t("common.save")}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </span>
                   </CardDescription>
                 </CardHeader>

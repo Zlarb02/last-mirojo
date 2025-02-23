@@ -1,10 +1,4 @@
-import {
-  pgTable,
-  text,
-  uuid,
-  jsonb,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { pgTable, text, uuid, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -17,7 +11,7 @@ export const users = pgTable("users", {
 });
 
 export interface StatConfig {
-  type: 'progress' | 'number' | 'text';
+  type: "progress" | "number" | "text";
   max?: number;
   color?: string;
 }
@@ -26,7 +20,7 @@ export interface Stat {
   name: string;
   value: string | number;
   config: {
-    type: 'progress' | 'number' | 'text';
+    type: "progress" | "number" | "text";
     max?: number;
     color?: string;
   };
@@ -34,7 +28,9 @@ export interface Stat {
 
 export const gameStates = pgTable("game_states", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   stats: jsonb("stats").notNull().$type<Stat[]>(),
   inventory: jsonb("inventory").notNull(),
   eventLog: jsonb("event_log").notNull(),
@@ -42,13 +38,13 @@ export const gameStates = pgTable("game_states", {
   characterName: text("character_name"),
   characterDescription: text("character_description"),
   mainQuest: jsonb("main_quest"),
-  sideQuests: jsonb("side_quests").default('[]').notNull(), // Changed this line
+  sideQuests: jsonb("side_quests").default("[]").notNull(), // Changed this line
 });
 
 export const insertUserSchema = createInsertSchema(users);
 
 export interface Message {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: string;
 }
@@ -61,9 +57,11 @@ export const games = pgTable("games", {
   gameStateId: uuid("game_state_id").references(() => gameStates.id, {
     onDelete: "cascade",
   }),
-  name: text("name").default('').notNull(), // Ajout du champ name
-  description: text("description").default(''), // Ajout du champ description
-  conversation: jsonb("conversation").$type<{ messages: Message[]; timestamp: string }>().notNull(),
+  name: text("name").default("").notNull(),
+  description: text("description").default(""),
+  conversation: jsonb("conversation")
+    .$type<{ messages: Message[]; timestamp: string }>()
+    .notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

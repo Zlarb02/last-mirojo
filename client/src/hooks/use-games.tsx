@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 export interface Game {
+  description: string;
   id: string; // Changed from number to string - matches UUID in database
   userId: string;
   gameStateId: string;

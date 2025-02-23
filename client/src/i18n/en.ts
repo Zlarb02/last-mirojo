@@ -34,7 +34,7 @@ export default {
         maxValue: "Maximum value",
         color: "Color",
         value: "Value",
-        addStat: "Add stat"
+        addStat: "Add stat",
       },
       events: {
         title: "Event Log",
@@ -56,7 +56,7 @@ export default {
         name: "Character name",
         noName: "No name",
         description: "Description",
-        noDescription: "No description"
+        noDescription: "No description",
       },
       quests: {
         title: "Quests",
@@ -67,21 +67,21 @@ export default {
         status: {
           notStarted: "Not started",
           active: "Active",
-          completed: "Completed"
-        }
+          completed: "Completed",
+        },
       },
       inventory: {
         title: "Inventory",
         empty: "Empty inventory",
         add: "Add",
-        newItem: "New item"
+        newItem: "New item",
       },
       newGame: "New game",
       enterGameName: "Enter game name",
       start: "Start",
       confirmTitle: "Create new game",
       confirmNewGame: "Do you want to create a new game named « {{name}} » ?",
-      createFailed: "Failed to create new game"
+      createFailed: "Failed to create new game",
     },
     navigation: {
       menu: "Menu",
@@ -117,15 +117,15 @@ export default {
           unlimitedGames: "Unlimited saved games",
           advancedAI: "Advanced AI",
           prioritySupport: "Priority support",
-          exclusiveContent: "Exclusive content"
+          exclusiveContent: "Exclusive content",
         },
         management: {
           title: "Subscription management",
           cancel: "Cancel subscription",
           renew: "Auto-renewal",
           nextBilling: "Next billing",
-          cardEnding: "Card ending in"
-        }
+          cardEnding: "Card ending in",
+        },
       },
       appearance: {
         title: "Appearance",
@@ -142,13 +142,13 @@ export default {
         quality: {
           low: "Low",
           medium: "Medium",
-          high: "High"
+          high: "High",
         },
         speed: {
           slow: "Slow",
           normal: "Normal",
-          fast: "Fast"
-        }
+          fast: "Fast",
+        },
       },
       notifications: {
         title: "Notifications",
@@ -157,8 +157,8 @@ export default {
         enabled: "Notifications enabled",
         disabled: "Notifications disabled",
         game: "Game notifications",
-        sound: "Sound effects"
-      }
+        sound: "Sound effects",
+      },
     },
     myGames: {
       error: "Failed to load games",
@@ -171,9 +171,20 @@ export default {
       startNew: "Start a new adventure",
       create: "Create",
       deleteTitle: "Delete game",
-      deleteDescription: "Are you sure you want to delete this game? This action cannot be undone.",
+      deleteDescription:
+        "Are you sure you want to delete this game? This action cannot be undone.",
       deleted: "Game deleted successfully",
-      deleteFailed: "Failed to delete game"
+      deleteFailed: "Failed to delete game",
+      rename: "Rename game",
+      renameDescription: "Enter a new name for this game",
+      renamePlaceholder: "Game name",
+      renamed: "Game renamed successfully",
+      renameFailed: "Failed to rename game",
+      noDescription: "Add a description",
+      descriptionPlaceholder: "Game description",
+      editDescription: "Edit description",
+      descriptionUpdated: "Description updated successfully",
+      descriptionUpdateFailed: "Failed to update description",
     },
     common: {
       toggleTheme: "Toggle theme",
@@ -194,13 +205,12 @@ export default {
         classic: "Classic",
         modern: "Modern",
         soft: "Soft",
-        sharp: "Sharp"
+        sharp: "Sharp",
       },
       colors: "Colors",
       primaryColor: "Primary color",
       secondaryColor: "Secondary color",
-      moreSettings: "More appearance settings"
-    }
-  }
-}
-;
+      moreSettings: "More appearance settings",
+    },
+  },
+};
