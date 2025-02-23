@@ -2,7 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { useEffect } from "react";
 import { themes } from "@/lib/themes";
-import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
+import {
+  getTextColor,
+  adjustLuminanceForContrast,
+  adjustControlLuminance,
+} from "@/lib/color-utils";
 
 export function useThemePreferences() {
   const { theme, setTheme } = useTheme();
@@ -72,12 +76,19 @@ export function useThemePreferences() {
       if (primary) {
         const [h, s, l] = primary.split(" ").map((v: string) => parseFloat(v));
         const adjustedL = adjustLuminanceForContrast(h, s, l);
+        const isDark = getTextColor(h, s, adjustedL) === "light";
+        const controlL = adjustControlLuminance(h, s, l, isDark);
         const hslValue = `${h} ${s}% ${adjustedL}%`;
+        const controlHslValue = `${h} ${s}% ${controlL}%`;
 
         document.documentElement.style.setProperty("--primary", hslValue);
         document.documentElement.style.setProperty(
           "--primary-foreground",
-          getTextColor(h, s, adjustedL) === "light" ? "0 0% 100%" : "0 0% 0%"
+          isDark ? "0 0% 100%" : "0 0% 0%"
+        );
+        document.documentElement.style.setProperty(
+          "--control-foreground",
+          isDark ? "0 0% 100%" : "0 0% 0%"
         );
       }
 

@@ -7,12 +7,10 @@
     --radius: 0.5rem;
     --border-width: 1px;
     --popover: 0 0% 100%;
-    --alert: 0 0% 100%;
   }
 
   .dark {
     --popover: 0 0% 0%;
-    --alert: 0 0% 0%;
   }
 
   * {

@@ -367,6 +367,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
           toast({
             title: t("success"),
             description: t("game.chat.saved"),
+            variant: "success",
           });
         }
         return response;
@@ -389,6 +390,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
         toast({
           title: t("success"),
           description: t("game.chat.saved"),
+          variant: "success",
         });
       }
 
@@ -448,6 +450,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       toast({
         title: t("success"),
         description: t("game.chat.savedNew"),
+        variant: "success",
       });
     } catch (error) {
       console.error("Failed to save new game:", error);
@@ -475,6 +478,7 @@ export function ChatInterface({ initialConversation }: ChatInterfaceProps) {
       toast({
         title: t("success"),
         description: t("game.created"),
+        variant: "success",
       });
     } catch (error) {
       console.error("Failed to create new game:", error);

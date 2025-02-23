@@ -13,6 +13,7 @@ import { ThemeProvider } from "next-themes";
 import "./i18n/config";
 import NewGamePage from "./pages/new-game-page";
 import { useThemePreferences } from "./hooks/use-theme-preferences";
+import { MusicPlayerProvider } from "@/contexts/music-player-context";
 
 function Router() {
   const { user } = useAuth();
@@ -33,12 +34,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <AuthProvider>
-          <Router />
-          <Toaster />
-        </AuthProvider>
-      </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <MusicPlayerProvider>
+            <Router />
+            <Toaster />
+          </MusicPlayerProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

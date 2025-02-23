@@ -45,6 +45,7 @@ export default function MyGamesPage() {
       toast({
         title: t("success"),
         description: t("myGames.deleted"),
+        variant: "success", // Vert pour le succès
       });
     },
     onError: (error) => {
@@ -52,7 +53,7 @@ export default function MyGamesPage() {
       toast({
         title: t("error"),
         description: t("myGames.deleteFailed"),
-        variant: "destructive",
+        variant: "destructive", // Rouge pour les erreurs
       });
     },
   });
@@ -77,6 +78,7 @@ export default function MyGamesPage() {
       toast({
         title: t("success"),
         description: t("myGames.renamed"),
+        variant: "success", // Vert pour le succès
       });
     },
     onError: (error) => {
@@ -84,7 +86,7 @@ export default function MyGamesPage() {
       toast({
         title: t("error"),
         description: t("myGames.renameFailed"),
-        variant: "destructive",
+        variant: "destructive", // Rouge pour les erreurs
       });
     },
   });
@@ -106,6 +108,7 @@ export default function MyGamesPage() {
       toast({
         title: t("success"),
         description: t("myGames.descriptionUpdated"),
+        variant: "success", // Vert pour le succès
       });
     },
     onError: (error) => {
@@ -113,7 +116,7 @@ export default function MyGamesPage() {
       toast({
         title: t("error"),
         description: t("myGames.descriptionUpdateFailed"),
-        variant: "destructive",
+        variant: "destructive", // Rouge pour les erreurs
       });
     },
   });
@@ -213,6 +216,9 @@ export default function MyGamesPage() {
                             <AlertDialogTitle>
                               {t("myGames.rename")}
                             </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t("myGames.renamePlaceholder")}
+                            </AlertDialogDescription>
                           </AlertDialogHeader>
                           <div className="space-y-4">
                             <div className="space-y-2">
@@ -287,6 +293,9 @@ export default function MyGamesPage() {
                                 "Modifier la description"
                               )}
                             </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t("myGames.descriptionPlaceholder")}
+                            </AlertDialogDescription>
                           </AlertDialogHeader>
                           <div className="space-y-4">
                             <div className="space-y-2">
