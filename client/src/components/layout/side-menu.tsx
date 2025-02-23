@@ -62,10 +62,10 @@ export function SideMenu() {
             side="left"
             className="w-72 p-6 border-r shadow-xl bg-white dark:bg-gray-950"
           >
-            <SheetTitle className="text-lg font-semibold mb-4">
+            <SheetTitle className="text-xl font-semibold mb-4">
               {t("navigation.menu")}
             </SheetTitle>
-            <SheetDescription className="sr-only">
+            <SheetDescription className="sr-only text-lg">
               {t("navigation.menuDescription")}
             </SheetDescription>
             <nav className="space-y-2">
@@ -74,11 +74,11 @@ export function SideMenu() {
                   <Button
                     variant={location === item.href ? "secondary" : "ghost"}
                     className={cn(
-                      "w-full justify-start gap-3 text-base py-6",
+                      "w-full justify-start gap-3 text-lg py-6",
                       location === item.href && "bg-secondary/60"
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className="h-6 w-6" />
                     {item.label}
                   </Button>
                 </Link>
