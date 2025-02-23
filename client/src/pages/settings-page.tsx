@@ -12,18 +12,24 @@ import { SubscriptionSettings } from "@/components/settings/subscription-setting
 export default function SettingsPage() {
   const { t } = useTranslation();
   const [location] = useLocation();
-  
+
   const hash = useHash();
   const [section, subsection] = hash.split("-");
 
   const renderSettingsContent = () => {
     // Gestion des sous-sections
     if (section === "appearance") {
-      return <AppearanceSettings section={subsection as 'theme' | 'colors' | 'style'} />;
+      return (
+        <AppearanceSettings
+          section={subsection as "theme" | "colors" | "style"}
+        />
+      );
     }
-    
+
     if (section === "subscription") {
-      return <SubscriptionSettings section={subsection as 'plan' | 'billing'} />;
+      return (
+        <SubscriptionSettings section={subsection as "plan" | "billing"} />
+      );
     }
 
     // Sections principales
@@ -38,21 +44,21 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
       <SideMenu />
 
       <div className="flex-1 flex flex-col">
         <Header />
 
-        <main className="flex-1 flex">
+        <main className="flex-1 flex flex-col lg:flex-row">
           <SettingsNav />
-          
-          <div className="flex-1 p-8">
+
+          <div className="flex-1 p-4 sm:p-8">
             <h1 className="text-2xl font-bold mb-6">
               {t("settings.title", "Réglages")}
             </h1>
-            
-            <div className="max-w-3xl">
+
+            <div className="max-w-3xl mx-auto lg:mx-0">
               {renderSettingsContent()}
             </div>
           </div>
