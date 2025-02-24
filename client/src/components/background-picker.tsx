@@ -28,6 +28,13 @@ interface YoutubeVideo {
   thumbnail: string;
 }
 
+interface UnsplashPhoto {
+  id: string;
+  url: string;
+  thumbnail: string;
+  title: string;
+}
+
 // Exemples prédéfinis
 const PRESET_BACKGROUNDS = {
   images: [
@@ -76,6 +83,7 @@ export function BackgroundPicker({
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"image" | "video">("image");
   const [youtubeResults, setYoutubeResults] = useState<YoutubeVideo[]>([]);
+  const [unsplashResults, setUnsplashResults] = useState<UnsplashPhoto[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
@@ -98,6 +106,22 @@ export function BackgroundPicker({
     }
   };
 
+  const searchUnsplash = async (query: string) => {
+    if (!query) return [];
+    
+    try {
+      const res = await fetch(`/api/unsplash/search?q=${encodeURIComponent(query)}`);
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error("Erreur lors de la recherche Unsplash:", error);
+      return [];
+    }
+  };
+
   const handleSearch = async (value: string) => {
     setSearchTerm(value.toLowerCase());
     setIsSearching(true);
@@ -112,6 +136,9 @@ export function BackgroundPicker({
       if (activeTab === "video") {
         const results = await searchYoutube(value);
         setYoutubeResults(results);
+      } else if (activeTab === "image") {
+        const results = await searchUnsplash(value);
+        setUnsplashResults(results);
       }
       setIsSearching(false);
     }, 500);
@@ -134,6 +161,54 @@ export function BackgroundPicker({
       item.title.toLowerCase().includes(searchTerm)
     ),
   };
+
+  const imageContent = searchTerm
+    ? unsplashResults.map((image) => (
+        <div
+          key={image.id}
+          className={cn(
+            "group relative aspect-video cursor-pointer overflow-hidden rounded-lg",
+            selected?.type === "image" && selected.url === image.url && "ring-2 ring-primary"
+          )}
+          onClick={() => onSelect("image", image.url)}
+        >
+          <img
+            src={image.thumbnail}
+            alt={image.title}
+            className="object-cover transition-transform group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="absolute inset-0 flex items-center justify-center p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="text-center text-sm font-medium line-clamp-2">
+              {image.title}
+            </span>
+          </div>
+        </div>
+      ))
+    : filteredBackgrounds.images.map((image, index) => (
+      <div
+        key={index}
+        className={cn(
+          "group relative aspect-video cursor-pointer overflow-hidden rounded-lg",
+          selected?.type === "image" &&
+            selected.url === image.url &&
+            "ring-2 ring-primary"
+        )}
+        onClick={() => onSelect("image", image.url)}
+      >
+        <img
+          src={image.thumbnail}
+          alt={image.title}
+          className="object-cover transition-transform group-hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100" />
+        <div className="absolute inset-0 flex items-center justify-center p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
+          <span className="text-center text-sm font-medium">
+            {image.title}
+          </span>
+        </div>
+      </div>
+    ));
 
   return (
     <div className={cn("flex flex-col gap-4", containerClassName)}>
@@ -179,30 +254,7 @@ export function BackgroundPicker({
         <TabsContent value="image" className="mt-4">
           <ScrollArea className="h-[300px] rounded-md border p-4">
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              {filteredBackgrounds.images.map((image, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "group relative aspect-video cursor-pointer overflow-hidden rounded-lg",
-                    selected?.type === "image" &&
-                      selected.url === image.url &&
-                      "ring-2 ring-primary"
-                  )}
-                  onClick={() => onSelect("image", image.url)}
-                >
-                  <img
-                    src={image.thumbnail}
-                    alt={image.title}
-                    className="object-cover transition-transform group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100" />
-                  <div className="absolute inset-0 flex items-center justify-center p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
-                    <span className="text-center text-sm font-medium">
-                      {image.title}
-                    </span>
-                  </div>
-                </div>
-              ))}
+              {imageContent}
             </div>
           </ScrollArea>
         </TabsContent>

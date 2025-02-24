@@ -472,6 +472,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/unsplash/search", async (req, res) => {
+    if (!process.env.UNSPLASH_ACCESS_KEY) {
+      return res.status(500).json({ error: "Unsplash API key is not configured" });
+    }
+
+    const query = req.query.q as string;
+    if (!query) {
+      return res.status(400).json({ error: "Query parameter is required" });
+    }
+
+    try {
+      const results = await searchUnsplash(query);
+      res.json(results);
+    } catch (error) {
+      console.error("Unsplash API error:", error);
+      res.status(500).json({ error: "Failed to fetch Unsplash results" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+export async function searchUnsplash(query: string) {
+  const response = await fetch(
+    `https://api.unsplash.com/search/photos?page=1&query=${encodeURIComponent(query)}&per_page=30`,
+    {
+      headers: {
+        Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+      },
+    }
+  );
+
+  const data = await response.json();
+  return data.results.map((photo: any) => ({
+    id: photo.id,
+    url: photo.urls.full,
+    thumbnail: photo.urls.small,
+    title: photo.description || photo.alt_description || 'Untitled',
+  }));
 }

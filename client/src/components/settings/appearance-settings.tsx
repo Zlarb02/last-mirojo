@@ -381,7 +381,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
             <div className="grid grid-cols-2 gap-4">
               <Button
                 variant={theme === "light" ? "default" : "outline"}
-                className="flex flex-col items-center justify-center gap-2 h-24 hover:bg-secondary/80"
+                className="flex flex-col items-center justify-center gap-2 h-24 bg-gray-50/80 hover:bg-muted/80 text-gray-950"
                 onClick={() => handleThemeChange("light")}
               >
                 <Icons.Sun className="h-6 w-6" />
@@ -389,7 +389,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
               </Button>
               <Button
                 variant={theme === "dark" ? "default" : "outline"}
-                className="flex flex-col items-center justify-center gap-2 h-24 hover:bg-secondary/80"
+                className="flex flex-col items-center justify-center gap-2 h-24 bg-gray-950/80 hover:bg-muted/80 text-gray-50"
                 onClick={() => handleThemeChange("dark")}
               >
                 <Icons.Moon className="h-6 w-6" />
