@@ -6,26 +6,45 @@
   :root {
     --radius: 0.5rem;
     --border-width: 1px;
-    --popover: 0 0% 100%;
-    --theme-transition-duration: 800ms;
+
+    /* Mode clair par défaut */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
 
-    /* Assurez-vous que toutes les variables de couleur sont définies ici */
+    --primary: 222.2 47.4% 35%;          /* Luminosité ajustée pour contraste */
+    --primary-foreground: 222.2 47.4% 95%; /* Texte clair sur fond foncé */
+
+    --secondary: 217.2 32.6% 40%;        /* Luminosité ajustée pour contraste */
+    --secondary-foreground: 217.2 32.6% 95%; /* Texte clair sur fond foncé */
+
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    
+    --muted: 217.2 32.6% 90%;           /* Plus clair pour le mode clair */
+    --muted-foreground: 217.2 32.6% 40%; /* Plus foncé pour lisibilité */
   }
 
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+
+    --primary: 222.2 47.4% 35%;          /* Même couleur mais contraste adapté */
+    --primary-foreground: 222.2 47.4% 95%; /* Texte clair */
+
+    --secondary: 217.2 32.6% 40%;        /* Même couleur mais contraste adapté */
+    --secondary-foreground: 217.2 32.6% 95%; /* Texte clair */
+
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    
+    --muted: 217.2 32.6% 20%;           /* Plus foncé pour le mode sombre */
+    --muted-foreground: 217.2 32.6% 70%; /* Plus clair pour lisibilité */
   }
 
   * {

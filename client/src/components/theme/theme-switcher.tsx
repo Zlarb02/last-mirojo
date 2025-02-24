@@ -11,7 +11,7 @@ import { Palette, Moon, Sun, Settings, Trash2 } from "lucide-react";
 import { themes, type ThemeVariant } from "@/lib/themes";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
+import { getTextColor, adjustLuminanceForContrast, processThemeColor } from "@/lib/color-utils";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
@@ -23,7 +23,7 @@ export function ThemeSwitcher() {
   const [mounted, setMounted] = useState(false);
   const [, setLocation] = useLocation();
   const { preferences, updatePreferences } = useThemePreferences();
-  const { setTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -83,13 +83,18 @@ export function ThemeSwitcher() {
       input.addEventListener("change", (e) => {
         const color = e.target as HTMLInputElement;
         const hsl = hexToHSL(color.value);
-        const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
-        const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
+        // Utiliser processThemeColor au lieu de adjustLuminanceForContrast
+        const processedColors = processThemeColor(`${hsl.h} ${hsl.s}% ${hsl.l}%`, resolvedTheme === 'dark');
 
+        // Appliquer immédiatement les couleurs
+        document.documentElement.style.setProperty(`--${type}`, processedColors.background);
+        document.documentElement.style.setProperty(`--${type}-foreground`, processedColors.foreground);
+
+        // Sauvegarder uniquement la couleur de fond
         updatePreferences({
           customColors: {
             ...preferences?.customColors,
-            [type]: hslValue,
+            [type]: processedColors.background,
           },
         });
       });

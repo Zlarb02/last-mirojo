@@ -5,22 +5,23 @@ interface ThemeConfig {
   variables: {
     radius: string;
     borderWidth: string;
-    defaults: {
+    colors: {
       primary: string;
       secondary: string;
     };
   };
 }
 
+// Ensure proper contrast ratios for default theme colors
 export const themes: Record<ThemeVariant, ThemeConfig> = {
   classic: {
     name: "Classique",
     variables: {
       radius: "0.375rem",
       borderWidth: "1px",
-      defaults: {
-        primary: "222.2 47.4% 11.2%",
-        secondary: "217.2 32.6% 17.5%",
+      colors: {
+        primary: "222.2 47.4% 35%",     // Adjusted for better contrast
+        secondary: "217.2 32.6% 40%",   // Adjusted for better contrast
       }
     }
   },
@@ -29,9 +30,9 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
     variables: {
       radius: "1rem",
       borderWidth: "2px",
-      defaults: {
-        primary: "246 80% 60%",
-        secondary: "280 80% 60%",
+      colors: {
+        primary: "246 80% 45%",         // Adjusted for better contrast
+        secondary: "280 80% 45%",       // Adjusted for better contrast
       }
     }
   },
@@ -40,9 +41,9 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
     variables: {
       radius: "0.75rem",
       borderWidth: "1px",
-      defaults: {
-        primary: "169 60% 45%",
-        secondary: "199 60% 45%",
+      colors: {
+        primary: "169 60% 40%",         // Adjusted for better contrast
+        secondary: "199 60% 40%",       // Adjusted for better contrast
       }
     }
   },
@@ -51,9 +52,9 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
     variables: {
       radius: "0",
       borderWidth: "2px",
-      defaults: {
-        primary: "0 0% 0%",
-        secondary: "0 0% 25%",
+      colors: {
+        primary: "0 0% 20%",            // Adjusted from pure black for better contrast
+        secondary: "0 0% 35%",          // Adjusted for better contrast
       }
     }
   }

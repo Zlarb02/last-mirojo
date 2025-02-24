@@ -71,37 +71,41 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     }
   };
 
-  const handleVariantChange = (variant: ThemeVariant) => {
-    updatePreferences({ themeVariant: variant });
-    setVariant(variant); // Mettre à jour l'état local
+  const handleVariantChange = (newVariant: ThemeVariant) => {
+    // Réinitialiser les couleurs personnalisées lors du changement de variante
+    updatePreferences({
+      themeVariant: newVariant,
+      customColors: null // Réinitialiser les couleurs personnalisées
+    });
+    setVariant(newVariant);
   };
 
   const handleColorChange = (type: "primary" | "secondary", color: string) => {
-    const hsl = hexToHSL(color);
-    const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
-    const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
+    try {
+      const hsl = hexToHSL(color);
+      const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
+      const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
 
-    // Utiliser directement updatePreferences au lieu de manipuler le DOM
-    updatePreferences({
-      customColors: {
-        ...preferences?.customColors,
-        [type]: hslValue,
-      },
-    });
+      // Mise à jour immédiate du DOM pour un retour visuel instantané
+      document.documentElement.style.setProperty(
+        `--${type}`,
+        hslValue
+      );
 
-    // Si c'est la couleur secondaire, mettre à jour les couleurs muted
-    if (type === "secondary") {
-      const mutedS = hsl.s * 0.3;
-      const mutedL = preferences?.themeMode === "dark" ? 11 : 96.1;
-      const mutedForeground = `${hsl.h} ${mutedS * 1.3}% ${
-        preferences?.themeMode === "dark" ? 56.9 : 46.9
-      }%`;
-
+      // Mise à jour des préférences
       updatePreferences({
         customColors: {
           ...preferences?.customColors,
+          [type]: hslValue,
         },
       });
+
+      // Si c'est la couleur secondaire, mettre à jour les couleurs muted
+      if (type === "secondary") {
+        updateMutedColors(hslValue);
+      }
+    } catch (error) {
+      console.error(`Error updating ${type} color:`, error);
     }
   };
 
@@ -127,29 +131,37 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   };
 
   const getCurrentHexColor = (variable: string) => {
+    const colorType = variable === "--primary" ? "primary" : "secondary";
+    
     try {
-      const hsl = getComputedStyle(document.documentElement)
-        .getPropertyValue(variable)
-        .trim()
-        .split(" ")
-        .map(v => parseFloat(v));
-
-      // Vérifier si les valeurs sont valides
-      if (hsl.some(isNaN)) {
-        console.warn("Invalid HSL values for", variable);
-        return variable === "--primary" ? "#000000" : "#666666";
+      // 1. D'abord essayer de récupérer la couleur depuis les préférences
+      if (preferences?.customColors?.[colorType]) {
+        const [h, s, l] = preferences.customColors[colorType]
+          .split(" ")
+          .map(v => parseFloat(v.replace("%", "")));
+        
+        if (!isNaN(h) && !isNaN(s) && !isNaN(l)) {
+          const [r, g, b] = hslToRGB(h, s, l);
+          return `#${[r, g, b]
+            .map(x => x.toString(16).padStart(2, '0'))
+            .join('')}`;
+        }
       }
 
-      const [r, g, b] = hslToRGB(hsl[0], hsl[1], hsl[2]);
-      return "#" + [r, g, b]
-        .map(x => {
-          const hex = x.toString(16);
-          return hex.length === 1 ? "0" + hex : hex;
-        })
-        .join("");
+      // 2. Sinon utiliser la couleur du thème actuel
+      const currentTheme = themes[variant];
+      const [h, s, l] = currentTheme.variables.colors[colorType]
+        .split(" ")
+        .map(v => parseFloat(v.replace("%", "")));
+
+      const [r, g, b] = hslToRGB(h, s, l);
+      return `#${[r, g, b]
+        .map(x => x.toString(16).padStart(2, '0'))
+        .join('')}`;
     } catch (error) {
-      console.error("Error converting HSL to hex:", error);
-      return "#000000";
+      console.warn(`Error getting color for ${variable}:`, error);
+      // Valeurs par défaut en cas d'erreur
+      return colorType === "primary" ? "#000000" : "#666666";
     }
   };
 

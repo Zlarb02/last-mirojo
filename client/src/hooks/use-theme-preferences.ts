@@ -88,28 +88,36 @@ export function useThemePreferences(): UseThemePreferencesReturn {
     try {
       document.documentElement.classList.add("no-transitions");
 
-      if (prefs.themeMode) {
-        setTheme(prefs.themeMode);
-      }
-
+      // Appliquer la variante du thème
       if (prefs.themeVariant && themes[prefs.themeVariant as ThemeVariant]) {
         const config = themes[prefs.themeVariant as ThemeVariant];
-        document.documentElement.style.setProperty(
-          "--radius",
-          config.variables.radius
-        );
-        document.documentElement.style.setProperty(
-          "--border-width",
-          config.variables.borderWidth
-        );
+        
+        // Appliquer les variables de base du thème
+        document.documentElement.style.setProperty("--radius", config.variables.radius);
+        document.documentElement.style.setProperty("--border-width", config.variables.borderWidth);
+        
+        // Appliquer les couleurs du thème sauf si des couleurs personnalisées existent
+        if (!prefs.customColors?.primary) {
+          document.documentElement.style.setProperty("--primary", config.variables.colors.primary);
+        }
+        if (!prefs.customColors?.secondary) {
+          document.documentElement.style.setProperty("--secondary", config.variables.colors.secondary);
+        }
       }
 
+      // Appliquer les couleurs personnalisées si elles existent
       if (prefs.customColors) {
         const { primary, secondary } = prefs.customColors;
-        if (primary)
+        if (primary) {
           document.documentElement.style.setProperty("--primary", primary);
-        if (secondary)
+        }
+        if (secondary) {
           document.documentElement.style.setProperty("--secondary", secondary);
+        }
+      }
+
+      if (prefs.themeMode) {
+        setTheme(prefs.themeMode);
       }
 
       if (prefs.background) {
