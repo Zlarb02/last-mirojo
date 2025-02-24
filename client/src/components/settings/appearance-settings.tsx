@@ -21,9 +21,10 @@ import { useThemePreferences } from "@/hooks/use-theme-preferences";
 import { BackgroundType, ColorMode, ThemePreferences } from '@/lib/client-types';
 import { useQueryClient } from "@tanstack/react-query";
 import { useBackground } from "@/hooks/use-background";
+import { useLocation } from "wouter";
 
 interface AppearanceSettingsProps {
-  section?: "theme" | "colors" | "style" | "background";
+  section?: "theme" | "themes" | "colors" | "border" | "background";
 }
 
 export function AppearanceSettings({ section }: AppearanceSettingsProps) {
@@ -43,6 +44,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     if (!preferences || isLoading) return;
@@ -452,6 +454,42 @@ iframe.src = currentSrc.toString();
         </Card>
       )}
 
+      {(!section || section === "themes") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("theme.presets")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(themes).map(([key, theme]) => (
+                <Button
+                  key={key}
+                  variant={variant === key ? "default" : "outline"}
+                  className="flex flex-col items-center justify-center gap-2 h-24"
+                  onClick={() => handleVariantChange(key as ThemeVariant)}
+                >
+                  <div 
+                    className="w-8 h-8 rounded"
+                    style={{
+                      background: `hsl(${theme.variables.colors.primary})`,
+                      border: `${theme.variables.borderWidth} solid hsl(${theme.variables.colors.secondary})`
+                    }}
+                  />
+                  <span>{theme.name}</span>
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                className="flex flex-col items-center justify-center gap-2 h-24"
+                >
+                <Icons.Plus className="h-6 w-6" />
+                <span>{t("theme.custom")}</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {(!section || section === "colors") && (
         <Card>
           <CardHeader>
@@ -502,90 +540,72 @@ iframe.src = currentSrc.toString();
         </Card>
       )}
 
-      {(!section || section === "style") && (
-        <>
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("theme.style")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RadioGroup value={variant} onValueChange={handleVariantChange}>
-                {Object.entries(themes).map(([key, theme]) => (
-                  <div key={key} className="flex items-center space-x-2">
-                    <RadioGroupItem value={key} id={key} />
-                    <Label htmlFor={key}>{theme.name}</Label>
+      {(!section || section === "border") && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("theme.borderStyle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4">
+              <div className="flex flex-col space-y-2">
+                <Label>{t("theme.borderRadius")}</Label>
+                <RadioGroup
+                  defaultValue={themes[variant].variables.radius}
+                  onValueChange={(value) => {
+                    document.documentElement.style.setProperty("--radius", value);
+                  }}
+                >
+                  <div className="grid grid-cols-3 gap-4">
+                    <Label className="flex flex-col items-center space-y-2">
+                      <RadioGroupItem value="0" className="sr-only" />
+                      <div className="w-12 h-12 rounded-none border-2 border-primary" />
+                      <span>{t("theme.square")}</span>
+                    </Label>
+                    <Label className="flex flex-col items-center space-y-2">
+                      <RadioGroupItem value="0.5rem" className="sr-only" />
+                      <div style={{ borderRadius: "0.5rem" }} className="w-12 h-12 border-2 border-primary" />
+                      <span>{t("theme.medium")}</span>
+                    </Label>
+                    <Label className="flex flex-col items-center space-y-2">
+                      <RadioGroupItem value="1rem" className="sr-only" />
+                      <div className="w-12 h-12 rounded-xl border-2 border-primary" />
+                      <span>{t("theme.rounded")}</span>
+                    </Label>
+
                   </div>
-                ))}
-              </RadioGroup>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("theme.background.title")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <BackgroundPicker
-                selected={
-                  bgUrl
-                    ? { type: bgType as "image" | "video", url: bgUrl }
-                    : null
-                }
-                onSelect={(type, url) => handleBackgroundChange(type, url)}
-                onVolumeChange={handleVolumeChange}
-                onOpacityChange={handleOpacityChange}
-                volume={videoVolume}
-                opacity={overlayOpacity} // Convertir en nombre
-                currentTime={videoCurrentTime}
-                duration={videoDuration}
-              />
-
-              {bgType === "video" && bgUrl && (
-                <div className="flex items-center justify-end">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                    onClick={toggleMute}
-                  >
-                    {isMuted ? (
-                      <Icons.VolumeX className="h-4 w-4" />
-                    ) : (
-                      <Icons.Volume2 className="h-4 w-4" />
-                    )}
-                    <span>
-                      {t(
-                        isMuted
-                          ? "theme.background.muteVideo"
-                          : "theme.background.unmuteVideo"
-                      )}
-                    </span>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("settings.appearance.uiEffects")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="ui-effects">
-                  {t("settings.appearance.uiEffectsDescription")}
-                </Label>
-                <Switch
-                  id="ui-effects"
-                  checked={uiEffects}
-                  onCheckedChange={(checked) =>
-                    handleEffectChange("ui", checked)
-                  }
-                />
+                </RadioGroup>
               </div>
-            </CardContent>
-          </Card>
-        </>
+              
+              <div className="flex flex-col space-y-2">
+                <Label>{t("theme.borderWidth")}</Label>
+                <RadioGroup
+                  defaultValue={themes[variant].variables.borderWidth}
+                  onValueChange={(value) => {
+                    document.documentElement.style.setProperty("--border-width", value);
+                  }}
+                >
+                  <div className="grid grid-cols-3 gap-4">
+                    <Label className="flex flex-col items-center space-y-2">
+                      <RadioGroupItem value="1px" className="sr-only" />
+                      <div className="w-12 h-12 rounded-md border border-primary" />
+                      <span>{t("theme.thin")}</span>
+                    </Label>
+                    <Label className="flex flex-col items-center space-y-2">
+                      <RadioGroupItem value="2px" className="sr-only" />
+                      <div className="w-12 h-12 rounded-md border-2 border-primary" />
+                      <span>{t("theme.medium")}</span>
+                    </Label>
+                    <Label className="flex flex-col items-center space-y-2">
+                      <RadioGroupItem value="4px" className="sr-only" />
+                      <div className="w-12 h-12 rounded-md border-4 border-primary" />
+                      <span>{t("theme.thick")}</span>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {(!section || section === "background") && (
@@ -635,21 +655,4 @@ iframe.src = currentSrc.toString();
       )}
     </div>
   );
-}
-async function updateThemePreferences({
-  themeMode,
-}: {
-  themeMode: "light" | "dark" | "system";
-}) {
-  try {
-    await fetch("/api/user/theme-preferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        themeMode,
-      }),
-    });
-  } catch (error) {
-    console.error("Failed to update theme preferences:", error);
-  }
 }

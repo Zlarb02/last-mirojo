@@ -17,8 +17,9 @@ export const settingsSections: SettingsSection[] = [
     icon: "palette",
     subsections: [
       { id: "theme", titleKey: "theme.mode" },
+      { id: "themes", titleKey: "theme.presets" },
       { id: "colors", titleKey: "theme.colors" },
-      { id: "style", titleKey: "theme.style" },
+      { id: "border", titleKey: "theme.borderStyle" },
       { id: "background", titleKey: "theme.background.title" },
     ],
   },

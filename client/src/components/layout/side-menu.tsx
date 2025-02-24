@@ -77,13 +77,18 @@ export function SideMenu() {
           icon: Sun,
         },
         {
-          href: "/settings#appearance-colors",
-          label: t("settings.appearance.colors"),
+          href: "/settings#appearance-themes",
+          label: t("theme.presets"),
           icon: Paintbrush,
         },
         {
-          href: "/settings#appearance-style",
-          label: t("settings.appearance.style"),
+          href: "/settings#appearance-colors",
+          label: t("settings.appearance.colors"),
+          icon: Palette,
+        },
+        {
+          href: "/settings#appearance-border-style",
+          label: t("theme.borderStyle"),
           icon: Layout,
         },
         {

@@ -28,7 +28,7 @@ export default function SettingsPage() {
     if (section === "appearance") {
       return (
         <AppearanceSettings
-          section={subsection as "theme" | "colors" | "style" | "background"}
+          section={subsection as "theme" | "colors" | "border" | "background"}
         />
       );
     }
