@@ -17,85 +17,60 @@ import { Button } from "../ui/button";
 import * as Icons from "lucide-react";
 import { BackgroundPicker } from "../background-picker";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
+import { BackgroundType, ColorMode, ThemePreferences } from '@/lib/client-types';
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AppearanceSettingsProps {
-  section?: "theme" | "colors" | "style" | "background"; // Ajouter "background"
+  section?: "theme" | "colors" | "style" | "background";
 }
 
 export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
-  const { preferences, updatePreferences } = useThemePreferences();
+  const { preferences, updatePreferences, isLoading } = useThemePreferences();
   const [variant, setVariant] = useState<ThemeVariant>("classic");
   const [uiEffects, setUiEffects] = useState(false);
   const [bgVideo, setBgVideo] = useState(false);
   const [bgImage, setBgImage] = useState("");
-  const [overlayOpacity, setOverlayOpacity] = useState(0.85);
-  const [bgType, setBgType] = useState<"none" | "image" | "video">("none");
+  const [overlayOpacity, setOverlayOpacity] = useState<number>(0.85);
+  const [bgType, setBgType] = useState<BackgroundType>("none");
   const [bgUrl, setBgUrl] = useState("");
   const [isMuted, setIsMuted] = useState(true);
-  const [videoVolume, setVideoVolume] = useState(0.5);
+  const [videoVolume, setVideoVolume] = useState<number>(0.5);
   const [videoCurrentTime, setVideoCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(0);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
-    const savedVariant = localStorage.getItem("theme-variant") as ThemeVariant;
-    if (savedVariant && themes[savedVariant]) {
-      setVariant(savedVariant);
+    if (!preferences || isLoading) return;
+
+    // Utiliser les préférences du serveur au lieu du localStorage
+    if (preferences.themeVariant && themes[preferences.themeVariant as ThemeVariant]) {
+      setVariant(preferences.themeVariant as ThemeVariant);
     }
-    setUiEffects(localStorage.getItem("ui-effects") === "true");
 
-    // Charger les préférences depuis l'API au lieu du localStorage
-    fetch("/api/user/theme-preferences")
-      .then((res) => res.json())
-      .then((prefs) => {
-        if (prefs.background) {
-          setBgType(prefs.background.type);
-          setBgUrl(prefs.background.url);
-          setOverlayOpacity(prefs.background.overlay);
-
-          if (prefs.background.type === "image" && prefs.background.url) {
-            document.documentElement.style.setProperty(
-              "--bg-image",
-              `url(${prefs.background.url})`
-            );
-          } else if (
-            prefs.background.type === "video" &&
-            prefs.background.url
-          ) {
-            updateBackgroundVideo(prefs.background.url);
-          }
-
-          if (prefs.background.overlay) {
-            document.documentElement.style.setProperty(
-              "--bg-overlay-opacity",
-              prefs.background.overlay
-            );
-          }
-        }
-      });
-
-    // Ajouter les écouteurs d'événements pour la vidéo
-    const handleTimeUpdate = (event: Event) => {
-      const video = event.target as HTMLVideoElement;
-      setVideoCurrentTime(video.currentTime);
-      setVideoDuration(video.duration);
-    };
-
-    const video = document.querySelector<HTMLVideoElement>(".bg-screen video");
-    if (video) {
-      video.addEventListener("timeupdate", handleTimeUpdate);
-      return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+    if (preferences.background) {
+      setBgType(preferences.background.type);
+      setBgUrl(preferences.background.url);
+      setOverlayOpacity(Number(preferences.background.overlay));
     }
-  }, []);
+  }, [preferences, isLoading]);
 
-  const handleThemeChange = (mode: "light" | "dark") => {
-    setTheme(mode); // Application immédiate via next-themes
-    updatePreferences({ themeMode: mode });
+  const handleThemeChange = async (mode: ColorMode) => {
+    try {
+      // Mise à jour en base de données
+      await updatePreferences({ themeMode: mode });
+      
+      // Mise à jour du thème local
+      setTheme(mode);
+    } catch (error) {
+      console.error("Failed to update theme:", error);
+    }
   };
 
   const handleVariantChange = (variant: ThemeVariant) => {
     updatePreferences({ themeVariant: variant });
+    setVariant(variant); // Mettre à jour l'état local
   };
 
   const handleColorChange = (type: "primary" | "secondary", color: string) => {
@@ -149,22 +124,30 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   };
 
   const getCurrentHexColor = (variable: string) => {
-    const hsl = getComputedStyle(document.documentElement)
-      .getPropertyValue(variable)
-      .trim()
-      .split(" ")
-      .map((v) => parseFloat(v));
+    try {
+      const hsl = getComputedStyle(document.documentElement)
+        .getPropertyValue(variable)
+        .trim()
+        .split(" ")
+        .map(v => parseFloat(v));
 
-    const [r, g, b] = hslToRGB(hsl[0], hsl[1], hsl[2]);
-    return (
-      "#" +
-      [r, g, b]
-        .map((x) => {
+      // Vérifier si les valeurs sont valides
+      if (hsl.some(isNaN)) {
+        console.warn("Invalid HSL values for", variable);
+        return variable === "--primary" ? "#000000" : "#666666";
+      }
+
+      const [r, g, b] = hslToRGB(hsl[0], hsl[1], hsl[2]);
+      return "#" + [r, g, b]
+        .map(x => {
           const hex = x.toString(16);
           return hex.length === 1 ? "0" + hex : hex;
         })
-        .join("")
-    );
+        .join("");
+    } catch (error) {
+      console.error("Error converting HSL to hex:", error);
+      return "#000000";
+    }
   };
 
   const handleEffectChange = (type: "ui" | "bg", value: boolean) => {
@@ -289,7 +272,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   };
 
   const handleBackgroundChange = async (
-    type: "none" | "image" | "video",
+    type: BackgroundType,
     url: string = ""
   ) => {
     setBgType(type);

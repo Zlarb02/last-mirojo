@@ -2,22 +2,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { useLayoutEffect } from "react";
 import { themes, ThemeVariant } from "@/lib/themes";
+import { ThemePreferences } from '@/lib/client-types';
 
-export interface ThemePreferences {
-  themeMode: "light" | "dark" | "system";
-  themeVariant: ThemeVariant;
-  customColors?: {
-    primary?: string;
-    secondary?: string;
-  };
-  background?: {
-    type: "none" | "image" | "video";
-    url: string;
-    overlay: string;
-  };
+interface UseThemePreferencesReturn {
+  preferences: ThemePreferences | undefined;
+  isLoading: boolean;
+  updatePreferences: (prefs: Partial<ThemePreferences>) => void;
 }
 
-export function useThemePreferences() {
+export function useThemePreferences(): UseThemePreferencesReturn {
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
@@ -26,73 +19,108 @@ export function useThemePreferences() {
     queryFn: async () => {
       const res = await fetch("/api/user/theme-preferences");
       if (!res.ok) throw new Error("Failed to fetch preferences");
-      return res.json();
+      const data = (await res.json()) as ThemePreferences;
+      return data;
     },
-    staleTime: Infinity,
+    select: (data) => {
+      // Synchroniser explicitement next-themes avec les préférences du serveur
+      // if (data.themeMode) {
+      //   setTheme(data.themeMode);
+      // }
+      return data;
+    },
+    // Garder les données en cache plus longtemps pour éviter les re-fetches inutiles
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    gcTime: 1000 * 60 * 30, // 30 minutes
   });
 
-  const { mutate: updatePreferences } = useMutation({
+  const { mutate: updatePreferences, mutateAsync: updatePreferencesAsync } = useMutation({
     mutationFn: async (newPrefs: Partial<ThemePreferences>) => {
-      // Appliquer les changements immédiatement avant la requête
-      applyThemePreferences(newPrefs);
-
       const res = await fetch("/api/user/theme-preferences", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newPrefs),
       });
       if (!res.ok) throw new Error("Failed to update preferences");
-      return res.json();
+      // Ne pas essayer de parser la réponse comme du JSON
+      return newPrefs; // Retourner les nouvelles préférences telles quelles
     },
-    onSuccess: (data, variables) => {
+    onMutate: async (newPrefs) => {
+      // Cancel any outgoing refetches to avoid showing stale data
+      await queryClient.cancelQueries({ queryKey: ["theme-preferences"] });
+
+      if (newPrefs.themeMode) {
+        // Attendre que next-themes termine la mise à jour
+        await setTheme(newPrefs.themeMode);
+      }
+
+      // Appliquer les changements immédiatement avant la requête
+      applyThemePreferences(newPrefs);
+
+      // Mettre à jour le cache optimistiquement
+      const previousPrefs = queryClient.getQueryData(["theme-preferences"]);
       queryClient.setQueryData(["theme-preferences"], (old: any) => ({
         ...old,
-        ...variables,
+        ...newPrefs,
       }));
+
+      return { previousPrefs };
     },
     onError: (error, variables, context) => {
-      // En cas d'erreur, on revient aux anciennes préférences
-      const oldPrefs = queryClient.getQueryData(["theme-preferences"]);
-      applyThemePreferences(oldPrefs as ThemePreferences);
+      // En cas d'erreur, restaurer les préférences précédentes
+      if (context?.previousPrefs) {
+        queryClient.setQueryData(["theme-preferences"], context.previousPrefs);
+        applyThemePreferences(context.previousPrefs as ThemePreferences);
+      }
+    },
+    onSettled: () => {
+      // Wait for mutation to complete before allowing refetches
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["theme-preferences"] });
+      }, 100);
     },
   });
 
   const applyThemePreferences = (prefs: Partial<ThemePreferences>) => {
     if (!prefs) return;
 
-    document.documentElement.classList.add("no-transitions");
+    try {
+      document.documentElement.classList.add("no-transitions");
 
-    if (prefs.themeMode) {
-      setTheme(prefs.themeMode);
+      if (prefs.themeMode) {
+        setTheme(prefs.themeMode);
+      }
+
+      if (prefs.themeVariant && themes[prefs.themeVariant as ThemeVariant]) {
+        const config = themes[prefs.themeVariant as ThemeVariant];
+        document.documentElement.style.setProperty(
+          "--radius",
+          config.variables.radius
+        );
+        document.documentElement.style.setProperty(
+          "--border-width",
+          config.variables.borderWidth
+        );
+      }
+
+      if (prefs.customColors) {
+        const { primary, secondary } = prefs.customColors;
+        if (primary)
+          document.documentElement.style.setProperty("--primary", primary);
+        if (secondary)
+          document.documentElement.style.setProperty("--secondary", secondary);
+      }
+
+      if (prefs.background) {
+        handleBackground(prefs.background);
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'application des préférences:", error);
+    } finally {
+      requestAnimationFrame(() => {
+        document.documentElement.classList.remove("no-transitions");
+      });
     }
-
-    if (prefs.themeVariant && themes[prefs.themeVariant]) {
-      const config = themes[prefs.themeVariant];
-      document.documentElement.style.setProperty(
-        "--radius",
-        config.variables.radius
-      );
-      document.documentElement.style.setProperty(
-        "--border-width",
-        config.variables.borderWidth
-      );
-    }
-
-    if (prefs.customColors) {
-      const { primary, secondary } = prefs.customColors;
-      if (primary)
-        document.documentElement.style.setProperty("--primary", primary);
-      if (secondary)
-        document.documentElement.style.setProperty("--secondary", secondary);
-    }
-
-    if (prefs.background) {
-      handleBackground(prefs.background);
-    }
-
-    requestAnimationFrame(() => {
-      document.documentElement.classList.remove("no-transitions");
-    });
   };
 
   const handleBackground = (bg: ThemePreferences["background"]) => {
@@ -129,5 +157,9 @@ export function useThemePreferences() {
     }
   }, [preferences, isLoading]);
 
-  return { preferences, isLoading, updatePreferences };
+  return { 
+    preferences, 
+    isLoading, 
+    updatePreferences: updatePreferencesAsync  // Export the async version
+  };
 }

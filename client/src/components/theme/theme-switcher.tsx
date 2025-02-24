@@ -15,6 +15,8 @@ import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
+import { ColorMode, CustomColors } from '@/lib/client-types';
+import { useQueryClient } from "@tanstack/react-query";
 
 export function ThemeSwitcher() {
   const { t } = useTranslation();
@@ -22,65 +24,93 @@ export function ThemeSwitcher() {
   const [, setLocation] = useLocation();
   const { preferences, updatePreferences } = useThemePreferences();
   const { setTheme } = useTheme();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleThemeChange = (mode: "light" | "dark") => {
-    setTheme(mode); // Appliquer immédiatement
-    updatePreferences({ themeMode: mode });
+  const handleThemeChange = async (mode: ColorMode) => {
+    try {
+      // Wait for the mutation to complete before allowing a refetch
+      await updatePreferences({ themeMode: mode });
+      
+      // Update local theme only after successful mutation
+      setTheme(mode);
+    } catch (error) {
+      console.error("Failed to update theme:", error);
+    }
   };
 
-  const setCustomColor = (type: "primary" | "secondary") => {
-    const input = document.createElement("input");
-    input.type = "color";
+  const handleVariantChange = (variant: ThemeVariant) => {
+    updatePreferences({ themeVariant: variant });
+    // Ne pas utiliser localStorage ici, laisser l'API gérer la persistance
+  };
 
-    // Récupérer la valeur HSL actuelle
-    const currentHSL = getComputedStyle(document.documentElement)
-      .getPropertyValue(`--${type}`)
-      .trim();
+  const setCustomColor = (type: keyof CustomColors) => {
+    try {
+      const input = document.createElement("input");
+      input.type = "color";
 
-    // Parser la valeur HSL (format: "H S% L%")
-    const [h, s, l] = currentHSL.split(" ").map((v) => parseFloat(v));
+      // Récupérer la valeur HSL actuelle
+      const currentHSL = getComputedStyle(document.documentElement)
+        .getPropertyValue(`--${type}`)
+        .trim();
 
-    // Convertir HSL en RGB puis en Hex
-    const [r, g, b] = hslToRGB(h, s, l);
-    const hex =
-      "#" +
-      [r, g, b]
-        .map((x) => {
-          const hex = x.toString(16);
-          return hex.length === 1 ? "0" + hex : hex;
-        })
-        .join("");
+      // Vérifier si la valeur HSL est valide
+      const hslValues = currentHSL.split(" ").map((v) => parseFloat(v));
+      if (hslValues.some(isNaN)) {
+        console.warn("Invalid HSL values:", currentHSL);
+        input.value = type === "primary" ? "#000000" : "#666666"; // valeurs par défaut
+      } else {
+        // Parser la valeur HSL (format: "H S% L%")
+        const [h, s, l] = hslValues;
 
-    input.value = hex;
+        // Convertir HSL en RGB puis en Hex
+        const [r, g, b] = hslToRGB(h, s, l);
+        const hex =
+          "#" +
+          [r, g, b]
+            .map((x) => {
+              const hex = x.toString(16);
+              return hex.length === 1 ? "0" + hex : hex;
+            })
+            .join("");
 
-    input.addEventListener("change", (e) => {
-      const color = e.target as HTMLInputElement;
-      const hsl = hexToHSL(color.value);
-      const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
-      const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
+        input.value = hex;
+      }
+
+      input.addEventListener("change", (e) => {
+        const color = e.target as HTMLInputElement;
+        const hsl = hexToHSL(color.value);
+        const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
+        const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
+
+        updatePreferences({
+          customColors: {
+            ...preferences?.customColors,
+            [type]: hslValue,
+          },
+        });
+      });
+
+      input.click();
+    } catch (error) {
+      console.error("Erreur lors de la modification de la couleur:", error);
+    }
+  };
+
+  const resetCustomColor = (type: keyof CustomColors) => {
+    try {
+      const customColors = { ...preferences?.customColors };
+      delete customColors[type];
 
       updatePreferences({
-        customColors: {
-          ...preferences?.customColors,
-          [type]: hslValue,
-        },
+        customColors,
       });
-    });
-
-    input.click();
-  };
-
-  const resetCustomColor = (type: "primary" | "secondary") => {
-    const customColors = { ...preferences?.customColors };
-    delete customColors[type];
-
-    updatePreferences({
-      customColors,
-    });
+    } catch (error) {
+      console.error("Erreur lors de la réinitialisation de la couleur:", error);
+    }
   };
 
   if (!mounted) return null;
@@ -113,9 +143,7 @@ export function ThemeSwitcher() {
         {Object.entries(themes).map(([key, config]) => (
           <DropdownMenuItem
             key={key}
-            onClick={() =>
-              updatePreferences({ themeVariant: key as ThemeVariant })
-            }
+            onClick={() => handleVariantChange(key as ThemeVariant)}
           >
             {config.name}
           </DropdownMenuItem>

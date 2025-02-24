@@ -5,31 +5,29 @@ import { themes, ThemeVariant } from "@/lib/themes";
 
 export function useThemeSetup() {
   const { setTheme } = useTheme();
-  const { preferences } = useThemePreferences();
+  const { preferences, isLoading } = useThemePreferences();
 
   useEffect(() => {
-    if (!preferences) return;
+    if (!preferences || isLoading) return;
 
-    // Vérifier si les valeurs ont changé avant de les mettre à jour
-    const currentTheme = localStorage.getItem("theme");
-    const currentVariant = localStorage.getItem("theme-variant");
-
-    if (preferences.themeMode && preferences.themeMode !== currentTheme) {
-      setTheme(preferences.themeMode);
-      localStorage.setItem("theme", preferences.themeMode);
-    }
-
-    if (
-      preferences.themeVariant &&
-      preferences.themeVariant !== currentVariant &&
-      themes[preferences.themeVariant as ThemeVariant]
-    ) {
-      const config = themes[preferences.themeVariant as ThemeVariant];
+    try {
       const root = document.documentElement;
 
-      root.style.setProperty("--radius", config.variables.radius);
-      root.style.setProperty("--border-width", config.variables.borderWidth);
-      localStorage.setItem("theme-variant", preferences.themeVariant);
+      // Appliquer le thème sans utiliser localStorage
+      if (preferences.themeMode) {
+        setTheme(preferences.themeMode);
+      }
+
+      // Appliquer la variante sans utiliser localStorage
+      if (preferences.themeVariant) {
+        const config = themes[preferences.themeVariant as ThemeVariant];
+        if (config) {
+          root.style.setProperty("--radius", config.variables.radius);
+          root.style.setProperty("--border-width", config.variables.borderWidth);
+        }
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'application des préférences du thème:", error);
     }
-  }, [preferences, setTheme]);
+  }, [preferences, isLoading, setTheme]);
 }
