@@ -9,6 +9,7 @@ import {
   adjustSecondaryLuminance,
   hexToHSL,
   hslToRGB,
+  processThemeColor,
 } from "@/lib/color-utils";
 import { useState, useEffect } from "react";
 import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
@@ -83,31 +84,38 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const handleColorChange = (type: "primary" | "secondary", color: string) => {
     try {
       const hsl = hexToHSL(color);
-      const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
-      const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
-
-      // Mise à jour immédiate du DOM pour un retour visuel instantané
+      const hslString = `${hsl.h} ${hsl.s}% ${hsl.l}%`;
+      
+      // Utiliser processThemeColor pour obtenir les couleurs optimisées
+      const processedColors = processThemeColor(hslString, theme === 'dark');
+  
+      // Mise à jour immédiate du DOM pour les couleurs de fond et de texte
       document.documentElement.style.setProperty(
         `--${type}`,
-        hslValue
+        processedColors.background
       );
-
-      // Mise à jour des préférences
+      document.documentElement.style.setProperty(
+        `--${type}-foreground`,
+        processedColors.foreground
+      );
+  
+      // Mise à jour des préférences avec les nouvelles couleurs
       updatePreferences({
         customColors: {
           ...preferences?.customColors,
-          [type]: hslValue,
+          [type]: processedColors.background,
         },
       });
-
+  
       // Si c'est la couleur secondaire, mettre à jour les couleurs muted
       if (type === "secondary") {
-        updateMutedColors(hslValue);
+        updateMutedColors(processedColors.background);
       }
     } catch (error) {
       console.error(`Error updating ${type} color:`, error);
     }
   };
+  
 
   const updateMutedColors = (secondaryHSL: string) => {
     const [h, s] = secondaryHSL.split(" ").map((v) => parseFloat(v));
@@ -134,7 +142,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     const colorType = variable === "--primary" ? "primary" : "secondary";
     
     try {
-      // 1. D'abord essayer de récupérer la couleur depuis les préférences
+      // D'abord essayer de récupérer la couleur depuis les préférences
       if (preferences?.customColors?.[colorType]) {
         const [h, s, l] = preferences.customColors[colorType]
           .split(" ")
@@ -148,7 +156,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
         }
       }
 
-      // 2. Sinon utiliser la couleur du thème actuel
+      // Sinon utiliser la couleur du thème actuel
       const currentTheme = themes[variant];
       const [h, s, l] = currentTheme.variables.colors[colorType]
         .split(" ")
@@ -160,7 +168,6 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
         .join('')}`;
     } catch (error) {
       console.warn(`Error getting color for ${variable}:`, error);
-      // Valeurs par défaut en cas d'erreur
       return colorType === "primary" ? "#000000" : "#666666";
     }
   };
