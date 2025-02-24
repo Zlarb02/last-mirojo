@@ -16,7 +16,7 @@ export const userPreferences = pgTable("user_preferences", {
   themeVariant: text("theme_variant").default("classic").notNull(),
   themeMode: text("theme_mode").default("system").notNull(),
   themeColors: jsonb("theme_colors").default(
-    '{"primary": null, "secondary": null}'
+    '{"primary": null, "secondary": null, "muted": null}'
   ),
   background: jsonb("background").default(
     '{"type": "none", "url": "", "overlay": "0.85", "isMuted": true}'

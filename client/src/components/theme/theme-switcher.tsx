@@ -264,6 +264,28 @@ export function ThemeSwitcher() {
             </Button>
           </div>
         </DropdownMenuItem>
+        <DropdownMenuItem>
+          <div className="flex items-center justify-between w-full">
+            <div
+              className="flex items-center"
+              onClick={() => setCustomColor("muted")}
+            >
+              <div className="w-4 h-4 rounded mr-2 bg-muted" />
+              {t("theme.mutedColor")}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-4 w-4 ml-2 hover:bg-destructive/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                resetCustomColor("muted");
+              }}
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/settings#appearance")}>
           <Settings className="h-4 w-4 mr-2" />

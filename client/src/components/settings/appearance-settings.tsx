@@ -95,7 +95,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     setVariant(newVariant);
   };
 
-  const handleColorChange = (type: "primary" | "secondary", color: string) => {
+  const handleColorChange = (type: "primary" | "secondary" | "muted", color: string) => {
     try {
       const hsl = hexToHSL(color);
       const hslString = `${hsl.h} ${hsl.s}% ${hsl.l}%`;
@@ -153,7 +153,12 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   };
 
   const getCurrentHexColor = (variable: string) => {
-    const colorType = variable === "--primary" ? "primary" : "secondary";
+    // Déterminer le type de couleur à partir de la variable
+    const colorType = variable === "--primary" 
+      ? "primary" 
+      : variable === "--secondary" 
+        ? "secondary"
+        : "muted";
     
     try {
       // D'abord essayer de récupérer la couleur depuis les préférences
@@ -170,19 +175,36 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
         }
       }
 
+      // Pour les couleurs muted, créer une version moins saturée de la couleur secondaire
+      if (colorType === "muted") {
+        const computedStyle = getComputedStyle(document.documentElement);
+        const mutedColor = computedStyle.getPropertyValue('--muted').trim();
+        if (mutedColor) {
+          const [h, s, l] = mutedColor.split(" ").map(v => parseFloat(v));
+          if (!isNaN(h) && !isNaN(s) && !isNaN(l)) {
+            const [r, g, b] = hslToRGB(h, s, l);
+            return `#${[r, g, b]
+              .map(x => x.toString(16).padStart(2, '0'))
+              .join('')}`;
+          }
+        }
+      }
+
       // Sinon utiliser la couleur du thème actuel
       const currentTheme = themes[variant];
-      const [h, s, l] = currentTheme.variables.colors[colorType]
-        .split(" ")
-        .map(v => parseFloat(v.replace("%", "")));
+      const themeColor = colorType === "muted" 
+        ? processThemeColor(currentTheme.variables.colors.secondary, theme === 'dark').background 
+        : currentTheme.variables.colors[colorType];
 
+      const [h, s, l] = themeColor.split(" ").map(v => parseFloat(v));
       const [r, g, b] = hslToRGB(h, s, l);
       return `#${[r, g, b]
         .map(x => x.toString(16).padStart(2, '0'))
         .join('')}`;
+
     } catch (error) {
       console.warn(`Error getting color for ${variable}:`, error);
-      return colorType === "primary" ? "#000000" : "#666666";
+      return colorType === "primary" ? "#000000" : colorType === "secondary" ? "#666666" : "#999999";
     }
   };
 
@@ -458,6 +480,20 @@ iframe.src = currentSrc.toString();
                   value={getCurrentHexColor("--secondary")}
                   onChange={(e) =>
                     handleColorChange("secondary", e.target.value)
+                  }
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <Label htmlFor="muted-color">
+                  {t("theme.mutedColor")}
+                </Label>
+                <Input
+                  id="muted-color"
+                  type="color"
+                  className="h-10 w-full sm:w-20"
+                  value={getCurrentHexColor("--muted")}
+                  onChange={(e) =>
+                    handleColorChange("muted", e.target.value)
                   }
                 />
               </div>

@@ -4,6 +4,7 @@ export type BackgroundType = "none" | "image" | "video";
 export interface CustomColors {
   primary?: string;
   secondary?: string;
+  muted?: string;
 }
 
 export interface BackgroundConfig {

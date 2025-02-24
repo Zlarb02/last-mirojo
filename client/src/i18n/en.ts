@@ -221,6 +221,7 @@ export default {
       colors: "Colors",
       primaryColor: "Primary color",
       secondaryColor: "Secondary color",
+      mutedColor: "Muted color",
       moreSettings: "More appearance settings",
       resetColor: "Reset color",
       colorResetSuccess: "Color reset successfully",
