@@ -272,14 +272,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const userId = req.user!.id;
-      const { customColors, themeMode, themeVariant } = req.body;
+      const { customColors, themeMode, themeVariant, background } = req.body;
+
+      // Log pour le débogage
+      console.log('Received theme preferences update:', {
+        userId,
+        customColors,
+        themeMode,
+        themeVariant,
+        background
+      });
+
+      // Valider le format du background si présent
+      if (background && (!background.type || !background.overlay)) {
+        return res.status(400).json({ 
+          error: "Invalid background format" 
+        });
+      }
 
       await storage.updateUserPreferences(userId, {
         customColors,
         themeMode,
         themeVariant,
+        background
       });
-      res.sendStatus(200);
+
+      res.json({ success: true });
     } catch (error) {
       console.error("Failed to update theme preferences:", error);
       res.status(500).json({ error: "Failed to update theme preferences" });

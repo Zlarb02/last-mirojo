@@ -58,11 +58,7 @@ const PRESET_BACKGROUNDS = {
       thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
       title: "Ambient Lights",
     },
-    {
-      url: "https://www.youtube.com/watch?v=8TGnju6tPqw",
-      thumbnail: "https://img.youtube.com/vi/8TGnju6tPqw/mqdefault.jpg",
-      title: "Cyberpunk City",
-    },
+
     // Ajoutez d'autres vidéos préréglées ici
   ],
 };

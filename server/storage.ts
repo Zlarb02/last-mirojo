@@ -321,20 +321,43 @@ export class DatabaseStorage implements IStorage {
         type: "none" | "image" | "video";
         url: string;
         overlay: string;
-        useLightTheme: boolean;
+        useLightTheme?: boolean;
       };
     }
   ): Promise<void> {
-    await db
+    // Créer un objet de mise à jour qui ne contient que les champs définis
+    const updateData: Record<string, any> = {};
+    
+    if (data.customColors !== undefined) {
+      updateData.customColors = data.customColors;
+    }
+    if (data.themeVariant !== undefined) {
+      updateData.themeVariant = data.themeVariant;
+    }
+    if (data.themeMode !== undefined) {
+      updateData.themeMode = data.themeMode;
+    }
+    if (data.background !== undefined) {
+      updateData.background = data.background;
+    }
+    
+    updateData.updatedAt = new Date();
+  
+    // Log pour le débogage
+    console.log('Updating user preferences:', {
+      userId,
+      updateData
+    });
+  
+    // Effectuer la mise à jour
+    const result = await db
       .update(userPreferences)
-      .set({
-        customColors: data.customColors,
-        themeVariant: data.themeVariant,
-        themeMode: data.themeMode,
-        background: data.background,
-        updatedAt: new Date(),
-      })
-      .where(eq(userPreferences.userId, userId));
+      .set(updateData)
+      .where(eq(userPreferences.userId, userId))
+      .returning();
+  
+    // Log pour confirmer la mise à jour
+    console.log('Update result:', result);
   }
 
   async getUserPreferences(userId: string) {

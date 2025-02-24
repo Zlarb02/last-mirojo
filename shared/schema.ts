@@ -19,8 +19,8 @@ export const userPreferences = pgTable("user_preferences", {
     '{"primary": null, "secondary": null}'
   ),
   background: jsonb("background").default(
-    '{"type": "none", "url": "", "overlay": "0.85"}'
-  ),
+    '{"type": "none", "url": "", "overlay": "0.85", "isMuted": true}'
+  ).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   customColors: jsonb("custom_colors"),

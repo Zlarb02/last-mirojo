@@ -19,6 +19,7 @@ import { BackgroundPicker } from "../background-picker";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
 import { BackgroundType, ColorMode, ThemePreferences } from '@/lib/client-types';
 import { useQueryClient } from "@tanstack/react-query";
+import { useBackground } from "@/hooks/use-background";
 
 interface AppearanceSettingsProps {
   section?: "theme" | "colors" | "style" | "background";
@@ -28,6 +29,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const { preferences, updatePreferences, isLoading } = useThemePreferences();
+  const { updateBackground } = useBackground();
   const [variant, setVariant] = useState<ThemeVariant>("classic");
   const [uiEffects, setUiEffects] = useState(false);
   const [bgVideo, setBgVideo] = useState(false);
@@ -53,6 +55,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
       setBgType(preferences.background.type);
       setBgUrl(preferences.background.url);
       setOverlayOpacity(Number(preferences.background.overlay));
+      setIsMuted(preferences.background.isMuted ?? true); // Ajouter cette ligne
     }
   }, [preferences, isLoading]);
 
@@ -261,52 +264,46 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
 
-    // Mettre à jour l'iframe existante si elle existe
-    const iframe =
-      document.querySelector<HTMLIFrameElement>(".bg-screen iframe");
-    if (iframe) {
-      const currentSrc = new URL(iframe.src);
-      currentSrc.searchParams.set("mute", newMutedState ? "1" : "0");
-      iframe.src = currentSrc.toString();
+    // Appliquer immédiatement le changement
+    if (bgType === "video" && bgUrl) {
+      updateBackground(bgType, bgUrl, overlayOpacity, newMutedState, videoVolume);
     }
-  };
 
-  const handleBackgroundChange = async (
-    type: BackgroundType,
-    url: string = ""
-  ) => {
+    // Sauvegarder en base de données
+    await updatePreferences({
+      background: {
+        type: bgType,
+        url: bgUrl,
+        overlay: overlayOpacity.toString(),
+        isMuted: newMutedState
+      }
+    });
+
+// Mettre à jour l'iframe existante si elle existe
+const iframe =
+document.querySelector<HTMLIFrameElement>(".bg-screen iframe");
+if (iframe) {
+const currentSrc = new URL(iframe.src);
+currentSrc.searchParams.set("mute", newMutedState ? "1" : "0");
+iframe.src = currentSrc.toString();
+}
+};
+
+  const handleBackgroundChange = async (type: BackgroundType, url: string = "") => {
     setBgType(type);
     setBgUrl(url);
 
-    // Nettoyer l'ancien arrière-plan
-    document.documentElement.style.removeProperty("--bg-image");
-    const oldMedia = document.querySelector(
-      ".bg-screen video, .bg-screen iframe"
-    );
-    if (oldMedia) {
-      oldMedia.remove();
-    }
+    // Appliquer les changements immédiatement
+    updateBackground(type, url, overlayOpacity, isMuted, videoVolume);
 
-    // Appliquer le nouvel arrière-plan
-    if (type !== "none" && url) {
-      if (type === "image") {
-        document.documentElement.style.setProperty("--bg-image", `url(${url})`);
-      } else if (type === "video") {
-        updateBackgroundVideo(url);
-      }
-    }
-
-    // Sauvegarder via l'API - sans la préférence de thème
-    await fetch("/api/user/theme-preferences", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        background: {
-          type,
-          url,
-          overlay: overlayOpacity,
-        },
-      }),
+    // Sauvegarder via l'API avec l'état muted
+    await updatePreferences({
+      background: {
+        type,
+        url,
+        overlay: overlayOpacity.toString(),
+        isMuted // Ajouter cette ligne
+      },
     });
   };
 

@@ -3,6 +3,7 @@ import { useTheme } from "next-themes";
 import { useLayoutEffect } from "react";
 import { themes, ThemeVariant } from "@/lib/themes";
 import { ThemePreferences } from '@/lib/client-types';
+import { useBackground } from "./use-background";
 
 interface UseThemePreferencesReturn {
   preferences: ThemePreferences | undefined;
@@ -136,7 +137,11 @@ export function useThemePreferences(): UseThemePreferencesReturn {
 
     cleanupOldBackground();
 
-    if (bg.type === "image" && bg.url) {
+    // Appliquer le background avec l'état muted sauvegardé
+    if (bg.type === "video" && bg.url) {
+      const { updateBackground } = useBackground();
+      updateBackground(bg.type, bg.url, Number(bg.overlay), bg.isMuted ?? true);
+    } else if (bg.type === "image" && bg.url) {
       document.documentElement.style.setProperty(
         "--bg-image",
         `url(${bg.url})`

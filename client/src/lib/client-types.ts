@@ -11,6 +11,7 @@ export interface BackgroundConfig {
   url: string;
   overlay: string;
   useLightTheme?: boolean;
+  isMuted?: boolean;
 }
 
 export interface ThemePreferences {
