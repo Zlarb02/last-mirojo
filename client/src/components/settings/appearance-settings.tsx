@@ -16,16 +16,16 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import * as Icons from "lucide-react";
 import { BackgroundPicker } from "../background-picker";
-import { useThemeManager } from "@/hooks/use-theme-manager"; // Ajouter cet import
+import { useThemePreferences } from "@/hooks/use-theme-preferences";
 
 interface AppearanceSettingsProps {
   section?: "theme" | "colors" | "style" | "background"; // Ajouter "background"
 }
 
-export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
+export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
-  const {} = useThemeManager(); // Ajouter ce hook
+  const { preferences, updatePreferences } = useThemePreferences();
   const [variant, setVariant] = useState<ThemeVariant>("classic");
   const [uiEffects, setUiEffects] = useState(false);
   const [bgVideo, setBgVideo] = useState(false);
@@ -89,44 +89,41 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
     }
   }, []);
 
-  const handleThemeVariantChange = (newVariant: string) => {
-    const config = themes[newVariant as ThemeVariant];
-    if (!config) return;
-
-    const root = document.documentElement;
-    root.style.setProperty("--radius", config.variables.radius);
-    root.style.setProperty("--border-width", config.variables.borderWidth);
-
-    // Sauvegarder et appliquer le nouveau variant
-    localStorage.setItem("theme-variant", newVariant);
-    setVariant(newVariant as ThemeVariant);
+  const handleThemeChange = (mode: "light" | "dark") => {
+    setTheme(mode); // Application immédiate via next-themes
+    updatePreferences({ themeMode: mode });
   };
 
-  const handleColorChange = (type: "primary" | "secondary", hex: string) => {
-    const hsl = hexToHSL(hex);
-    const adjustedL =
-      type === "primary"
-        ? adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l)
-        : adjustSecondaryLuminance(hsl.h, hsl.s, hsl.l);
+  const handleVariantChange = (variant: ThemeVariant) => {
+    updatePreferences({ themeVariant: variant });
+  };
+
+  const handleColorChange = (type: "primary" | "secondary", color: string) => {
+    const hsl = hexToHSL(color);
+    const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
     const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
 
-    // Sauvegarder la couleur personnalisée
-    const savedColors = localStorage.getItem("custom-colors");
-    const customColors = savedColors ? JSON.parse(savedColors) : {};
-    customColors[type] = hslValue;
-    localStorage.setItem("custom-colors", JSON.stringify(customColors));
+    // Utiliser directement updatePreferences au lieu de manipuler le DOM
+    updatePreferences({
+      customColors: {
+        ...preferences?.customColors,
+        [type]: hslValue,
+      },
+    });
 
-    // Appliquer la couleur
-    document.documentElement.style.setProperty(`--${type}`, hslValue);
-    document.documentElement.style.setProperty(
-      `--${type}-foreground`,
-      getTextColor(hsl.h, hsl.s, adjustedL) === "light"
-        ? "0 0% 100%"
-        : "0 0% 0%"
-    );
-
+    // Si c'est la couleur secondaire, mettre à jour les couleurs muted
     if (type === "secondary") {
-      updateMutedColors(hslValue);
+      const mutedS = hsl.s * 0.3;
+      const mutedL = preferences?.themeMode === "dark" ? 11 : 96.1;
+      const mutedForeground = `${hsl.h} ${mutedS * 1.3}% ${
+        preferences?.themeMode === "dark" ? 56.9 : 46.9
+      }%`;
+
+      updatePreferences({
+        customColors: {
+          ...preferences?.customColors,
+        },
+      });
     }
   };
 
@@ -354,30 +351,15 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
     }
   };
 
-  const handleTimeChange = (time: number) => {
-    const video = document.querySelector<HTMLVideoElement>(".bg-screen video");
-    if (video) {
-      video.currentTime = time;
-    }
-  };
-
-  // Séparer clairement les fonctions de changement de thème
-  const handleThemeChange = (mode: "light" | "dark" | "system") => {
-    // Désactiver temporairement les transitions
-    document.documentElement.classList.add("no-transitions");
-
-    // Appliquer le nouveau thème
-    setTheme(mode);
-    updateThemePreferences({ themeMode: mode });
-
-    // Réactiver les transitions après un court délai
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        document.documentElement.classList.remove("no-transitions");
-      });
-    });
-  };
-
+  /*************  ✨ Codeium Command ⭐  *************/
+  /**
+ * Updates the overlay opacity for the background theme.
+ *
+ * @param {number} value - The new opacity value for the overlay.
+ * 
+ * This function updates the local state and applies the new overlay opacity
+ * directly to the DOM. It also persists the updated opacity value by sending
+/******  a9deac8c-47ac-4dea-85ed-a0db07226556  *******/
   const handleOpacityChange = async (value: number) => {
     console.log("New opacity:", value); // Debug
 
@@ -478,10 +460,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
               <CardTitle>{t("theme.style")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <RadioGroup
-                value={variant}
-                onValueChange={handleThemeVariantChange}
-              >
+              <RadioGroup value={variant} onValueChange={handleVariantChange}>
                 {Object.entries(themes).map(([key, theme]) => (
                   <div key={key} className="flex items-center space-x-2">
                     <RadioGroupItem value={key} id={key} />
@@ -506,7 +485,6 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
                 onSelect={(type, url) => handleBackgroundChange(type, url)}
                 onVolumeChange={handleVolumeChange}
                 onOpacityChange={handleOpacityChange}
-                onTimeChange={handleTimeChange}
                 volume={videoVolume}
                 opacity={overlayOpacity} // Convertir en nombre
                 currentTime={videoCurrentTime}
@@ -574,7 +552,6 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps = {}) {
               onSelect={(type, url) => handleBackgroundChange(type, url)}
               onVolumeChange={handleVolumeChange}
               onOpacityChange={handleOpacityChange}
-              onTimeChange={handleTimeChange}
               volume={videoVolume}
               opacity={overlayOpacity}
               currentTime={videoCurrentTime}

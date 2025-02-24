@@ -1,134 +1,133 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
-import { useLayoutEffect } from "react"; // Changer useEffect en useLayoutEffect
-import { themes } from "@/lib/themes";
-import {
-  getTextColor,
-  adjustLuminanceForContrast,
-  adjustControlLuminance,
-} from "@/lib/color-utils";
+import { useLayoutEffect } from "react";
+import { themes, ThemeVariant } from "@/lib/themes";
+
+export interface ThemePreferences {
+  themeMode: "light" | "dark" | "system";
+  themeVariant: ThemeVariant;
+  customColors?: {
+    primary?: string;
+    secondary?: string;
+  };
+  background?: {
+    type: "none" | "image" | "video";
+    url: string;
+    overlay: string;
+  };
+}
 
 export function useThemePreferences() {
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
 
-  interface ThemePreferences {
-    themeVariant?: keyof typeof themes;
-    themeMode?: "light" | "dark" | "system";
-    customColors?: {
-      primary?: string;
-      secondary?: string;
-    };
-  }
-
-  // Charger les préférences depuis l'API
-  const { data: preferences } = useQuery<ThemePreferences | null>({
+  const { data: preferences, isLoading } = useQuery<ThemePreferences>({
     queryKey: ["theme-preferences"],
     queryFn: async () => {
       const res = await fetch("/api/user/theme-preferences");
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error("Failed to fetch preferences");
       return res.json();
     },
+    staleTime: Infinity,
   });
 
-  const { mutate: updateThemePreferences } = useMutation({
-    mutationFn: async (preferences: Partial<ThemePreferences>) => {
+  const { mutate: updatePreferences } = useMutation({
+    mutationFn: async (newPrefs: Partial<ThemePreferences>) => {
+      // Appliquer les changements immédiatement avant la requête
+      applyThemePreferences(newPrefs);
+
       const res = await fetch("/api/user/theme-preferences", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          themeMode: preferences.themeMode,
-          themeVariant: preferences.themeVariant,
-          customColors: preferences.customColors,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newPrefs),
       });
-      if (!res.ok) throw new Error("Failed to update theme preferences");
+      if (!res.ok) throw new Error("Failed to update preferences");
+      return res.json();
     },
-    onSuccess: () => {
-      // Rafraîchir les données après une mise à jour réussie
-      queryClient.invalidateQueries({ queryKey: ["theme-preferences"] });
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["theme-preferences"], (old: any) => ({
+        ...old,
+        ...variables,
+      }));
+    },
+    onError: (error, variables, context) => {
+      // En cas d'erreur, on revient aux anciennes préférences
+      const oldPrefs = queryClient.getQueryData(["theme-preferences"]);
+      applyThemePreferences(oldPrefs as ThemePreferences);
     },
   });
 
-  useLayoutEffect(() => {
-    if (!preferences) return;
+  const applyThemePreferences = (prefs: Partial<ThemePreferences>) => {
+    if (!prefs) return;
 
-    // Ajouter la classe no-transition temporairement
-    document.documentElement.classList.add("no-transition");
+    document.documentElement.classList.add("no-transitions");
 
-    // Appliquer le themeMode s'il existe
-    if (preferences.themeMode) {
-      setTheme(preferences.themeMode);
+    if (prefs.themeMode) {
+      setTheme(prefs.themeMode);
     }
 
-    // Retirer la classe après le changement
+    if (prefs.themeVariant && themes[prefs.themeVariant]) {
+      const config = themes[prefs.themeVariant];
+      document.documentElement.style.setProperty(
+        "--radius",
+        config.variables.radius
+      );
+      document.documentElement.style.setProperty(
+        "--border-width",
+        config.variables.borderWidth
+      );
+    }
+
+    if (prefs.customColors) {
+      const { primary, secondary } = prefs.customColors;
+      if (primary)
+        document.documentElement.style.setProperty("--primary", primary);
+      if (secondary)
+        document.documentElement.style.setProperty("--secondary", secondary);
+    }
+
+    if (prefs.background) {
+      handleBackground(prefs.background);
+    }
+
     requestAnimationFrame(() => {
-      document.documentElement.classList.remove("no-transition");
+      document.documentElement.classList.remove("no-transitions");
     });
+  };
 
-    // Appliquer le variant
-    if (preferences.themeVariant && themes[preferences.themeVariant]) {
-      const config = themes[preferences.themeVariant];
-      const root = document.documentElement;
+  const handleBackground = (bg: ThemePreferences["background"]) => {
+    if (!bg) return;
 
-      root.style.setProperty("--radius", config.variables.radius);
-      root.style.setProperty("--border-width", config.variables.borderWidth);
+    const cleanupOldBackground = () => {
+      document.documentElement.style.removeProperty("--bg-image");
+      const media = document.querySelector(
+        ".bg-screen video, .bg-screen iframe"
+      );
+      if (media) media.remove();
+    };
+
+    cleanupOldBackground();
+
+    if (bg.type === "image" && bg.url) {
+      document.documentElement.style.setProperty(
+        "--bg-image",
+        `url(${bg.url})`
+      );
     }
 
-    // Appliquer les couleurs personnalisées
-    if (preferences.customColors) {
-      const { primary, secondary } = preferences.customColors;
-
-      if (primary) {
-        const [h, s, l] = primary.split(" ").map((v: string) => parseFloat(v));
-        const adjustedL = adjustLuminanceForContrast(h, s, l);
-        const isDark = getTextColor(h, s, adjustedL) === "light";
-        const controlL = adjustControlLuminance(h, s, l, isDark);
-        const hslValue = `${h} ${s}% ${adjustedL}%`;
-        const controlHslValue = `${h} ${s}% ${controlL}%`;
-
-        document.documentElement.style.setProperty("--primary", hslValue);
-        document.documentElement.style.setProperty(
-          "--primary-foreground",
-          isDark ? "0 0% 100%" : "0 0% 0%"
-        );
-        document.documentElement.style.setProperty(
-          "--control-foreground",
-          isDark ? "0 0% 100%" : "0 0% 0%"
-        );
-      }
-
-      if (secondary) {
-        const [h, s, l] = secondary
-          .split(" ")
-          .map((v: string) => parseFloat(v));
-        const adjustedL = adjustLuminanceForContrast(h, s, l);
-        const hslValue = `${h} ${s}% ${adjustedL}%`;
-
-        document.documentElement.style.setProperty("--secondary", hslValue);
-        document.documentElement.style.setProperty(
-          "--secondary-foreground",
-          getTextColor(h, s, adjustedL) === "light" ? "0 0% 100%" : "0 0% 0%"
-        );
-
-        // Mettre à jour les couleurs muted
-        const mutedS = s * 0.3;
-        const mutedL = theme === "dark" ? 11 : 96.1;
-        const mutedForegroundL = theme === "dark" ? 56.9 : 46.9;
-
-        document.documentElement.style.setProperty(
-          "--muted",
-          `${h} ${mutedS}% ${mutedL}%`
-        );
-        document.documentElement.style.setProperty(
-          "--muted-foreground",
-          `${h} ${mutedS * 1.3}% ${mutedForegroundL}%`
-        );
-      }
+    if (bg.overlay) {
+      document.documentElement.style.setProperty(
+        "--bg-overlay-opacity",
+        bg.overlay
+      );
     }
-  }, [preferences, theme]);
+  };
 
-  return { preferences, updateThemePreferences };
+  useLayoutEffect(() => {
+    if (preferences && !isLoading) {
+      applyThemePreferences(preferences);
+    }
+  }, [preferences, isLoading]);
+
+  return { preferences, isLoading, updatePreferences };
 }

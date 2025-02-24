@@ -19,7 +19,7 @@ export const userPreferences = pgTable("user_preferences", {
     '{"primary": null, "secondary": null}'
   ),
   background: jsonb("background").default(
-    '{"type": "none", "url": "", "overlay": "0.85"}' // Supprimer useLightTheme
+    '{"type": "none", "url": "", "overlay": "0.85"}'
   ),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

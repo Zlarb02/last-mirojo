@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useThemePreferences } from "./use-theme-preferences";
-import { themes } from "@/lib/themes";
+import { themes, ThemeVariant } from "@/lib/themes";
 
 export function useThemeSetup() {
   const { setTheme } = useTheme();
@@ -10,22 +10,26 @@ export function useThemeSetup() {
   useEffect(() => {
     if (!preferences) return;
 
-    // Priorité aux préférences de la base de données
-    if (preferences.themeMode) {
+    // Vérifier si les valeurs ont changé avant de les mettre à jour
+    const currentTheme = localStorage.getItem("theme");
+    const currentVariant = localStorage.getItem("theme-variant");
+
+    if (preferences.themeMode && preferences.themeMode !== currentTheme) {
       setTheme(preferences.themeMode);
+      localStorage.setItem("theme", preferences.themeMode);
     }
 
-    if (preferences.themeVariant && themes[preferences.themeVariant]) {
-      const config = themes[preferences.themeVariant];
+    if (
+      preferences.themeVariant &&
+      preferences.themeVariant !== currentVariant &&
+      themes[preferences.themeVariant as ThemeVariant]
+    ) {
+      const config = themes[preferences.themeVariant as ThemeVariant];
       const root = document.documentElement;
 
       root.style.setProperty("--radius", config.variables.radius);
       root.style.setProperty("--border-width", config.variables.borderWidth);
-
-      // Mettre à jour le localStorage pour la cohérence
       localStorage.setItem("theme-variant", preferences.themeVariant);
     }
-
-    // Les couleurs personnalisées sont déjà gérées par use-theme-preferences
   }, [preferences, setTheme]);
 }

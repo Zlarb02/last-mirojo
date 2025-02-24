@@ -7,83 +7,29 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Palette, Moon, Sun, Settings, Trash2 } from "lucide-react"; // Ajoutez cet import
+import { Palette, Moon, Sun, Settings, Trash2 } from "lucide-react";
 import { themes, type ThemeVariant } from "@/lib/themes";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { getTextColor, adjustLuminanceForContrast } from "@/lib/color-utils";
 import { useTranslation } from "react-i18next";
-import { useLocation } from "wouter"; // Remplace router
+import { useLocation } from "wouter";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
-import { useThemeSetup } from "@/hooks/use-theme-setup";
 
 export function ThemeSwitcher() {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
-  const { updateThemePreferences } = useThemePreferences();
   const [mounted, setMounted] = useState(false);
-  const [variant, setVariant] = useState<ThemeVariant>("classic");
   const [, setLocation] = useLocation();
-
-  // Utiliser le nouveau hook pour le setup initial
-  useThemeSetup();
+  const { preferences, updatePreferences } = useThemePreferences();
+  const { setTheme } = useTheme();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Ajouter un useEffect pour surveiller les changements de thème
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Récupérer et réappliquer les couleurs muted quand le thème change
-    const savedMuted = localStorage.getItem("muted-colors");
-    if (savedMuted) {
-      const { hue, saturation } = JSON.parse(savedMuted);
-      const mutedS = saturation * 0.3;
-      const mutedL = theme === "dark" ? 11 : 96.1;
-      const mutedForegroundL = theme === "dark" ? 56.9 : 46.9;
-
-      const muted = `${hue} ${mutedS}% ${mutedL}%`;
-      const mutedForeground = `${hue} ${mutedS * 1.3}% ${mutedForegroundL}%`;
-
-      document.documentElement.style.setProperty("--muted", muted);
-      document.documentElement.style.setProperty(
-        "--muted-foreground",
-        mutedForeground
-      );
-    }
-  }, [theme, mounted]);
-
-  const applyThemeVariant = (
-    variant: ThemeVariant,
-    keepCustomColors = false
-  ) => {
-    const config = themes[variant];
-    const root = document.documentElement;
-
-    root.style.setProperty("--radius", config.variables.radius);
-    root.style.setProperty("--border-width", config.variables.borderWidth);
-
-    if (!keepCustomColors) {
-      const savedColors = localStorage.getItem("custom-colors");
-      const customColors = savedColors ? JSON.parse(savedColors) : {};
-
-      if (!customColors.primary) {
-        root.style.setProperty("--primary", config.variables.defaults.primary);
-      }
-
-      if (!customColors.secondary) {
-        root.style.setProperty(
-          "--secondary",
-          config.variables.defaults.secondary
-        );
-      }
-    }
-
-    localStorage.setItem("theme-variant", variant);
-    setVariant(variant);
-    updateThemePreferences({ themeVariant: variant });
+  const handleThemeChange = (mode: "light" | "dark") => {
+    setTheme(mode); // Appliquer immédiatement
+    updatePreferences({ themeMode: mode });
   };
 
   const setCustomColor = (type: "primary" | "secondary") => {
@@ -117,100 +63,24 @@ export function ThemeSwitcher() {
       const adjustedL = adjustLuminanceForContrast(hsl.h, hsl.s, hsl.l);
       const hslValue = `${hsl.h} ${hsl.s}% ${adjustedL}%`;
 
-      // Sauvegarder la couleur personnalisée
-      const savedColors = localStorage.getItem("custom-colors");
-      const customColors = savedColors ? JSON.parse(savedColors) : {};
-      customColors[type] = hslValue;
-      localStorage.setItem("custom-colors", JSON.stringify(customColors));
-
-      // Appliquer la couleur
-      document.documentElement.style.setProperty(`--${type}`, hslValue);
-
-      // Appliquer la couleur du texte appropriée
-      document.documentElement.style.setProperty(
-        `--${type}-foreground`,
-        getTextColor(hsl.h, hsl.s, adjustedL) === "light"
-          ? "0 0% 100%"
-          : "0 0% 0%"
-      );
-
-      // Mise à jour des couleurs muted si la couleur secondaire change
-      if (type === "secondary") {
-        const mutedS = hsl.s * 0.3;
-        const mutedL = theme === "dark" ? 11 : 96.1;
-        const muted = `${hsl.h} ${mutedS}% ${mutedL}%`;
-        const mutedForeground = `${hsl.h} ${mutedS * 1.3}% ${
-          theme === "dark" ? 56.9 : 46.9
-        }%`;
-
-        document.documentElement.style.setProperty("--muted", muted);
-        document.documentElement.style.setProperty(
-          "--muted-foreground",
-          mutedForeground
-        );
-
-        // Sauvegarder les valeurs de base (teinte et saturation) au lieu des valeurs calculées
-        localStorage.setItem(
-          "muted-colors",
-          JSON.stringify({
-            hue: hsl.h,
-            saturation: hsl.s,
-          })
-        );
-      }
-
-      // Mettre à jour en base de données
-      updateThemePreferences({ customColors });
+      updatePreferences({
+        customColors: {
+          ...preferences?.customColors,
+          [type]: hslValue,
+        },
+      });
     });
 
     input.click();
   };
 
-  const resetCustomColor = async (type: "primary" | "secondary") => {
-    // Récupérer la configuration du thème actuel
-    const config = themes[variant];
-    if (!config) return;
-
-    // Supprimer la couleur personnalisée du localStorage
-    const savedColors = localStorage.getItem("custom-colors");
-    const customColors = savedColors ? JSON.parse(savedColors) : {};
+  const resetCustomColor = (type: "primary" | "secondary") => {
+    const customColors = { ...preferences?.customColors };
     delete customColors[type];
-    localStorage.setItem("custom-colors", JSON.stringify(customColors));
 
-    // Réappliquer la couleur par défaut du thème
-    document.documentElement.style.setProperty(
-      `--${type}`,
-      config.variables.defaults[type]
-    );
-
-    if (type === "secondary") {
-      updateMutedColors(config.variables.defaults.secondary);
-    }
-
-    // Mise à jour en base de données
-    updateThemePreferences({ customColors });
-  };
-
-  // Nouvelle fonction utilitaire pour mettre à jour les couleurs muted
-  const updateMutedColors = (secondaryHSL: string) => {
-    const [h, s] = secondaryHSL.split(" ").map((v) => parseFloat(v));
-    const mutedS = s * 0.3;
-    const mutedL = theme === "dark" ? 11 : 96.1;
-    const muted = `${h} ${mutedS}% ${mutedL}%`;
-    const mutedForeground = `${h} ${mutedS * 1.3}% ${
-      theme === "dark" ? 56.9 : 46.9
-    }%`;
-
-    document.documentElement.style.setProperty("--muted", muted);
-    document.documentElement.style.setProperty(
-      "--muted-foreground",
-      mutedForeground
-    );
-  };
-
-  const handleThemeChange = (mode: "light" | "dark" | "system") => {
-    setTheme(mode);
-    updateThemePreferences({ themeMode: mode });
+    updatePreferences({
+      customColors,
+    });
   };
 
   if (!mounted) return null;
@@ -243,7 +113,9 @@ export function ThemeSwitcher() {
         {Object.entries(themes).map(([key, config]) => (
           <DropdownMenuItem
             key={key}
-            onClick={() => applyThemeVariant(key as ThemeVariant)}
+            onClick={() =>
+              updatePreferences({ themeVariant: key as ThemeVariant })
+            }
           >
             {config.name}
           </DropdownMenuItem>
@@ -297,7 +169,7 @@ export function ThemeSwitcher() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/settings#appearance")}>
           <Settings className="h-4 w-4 mr-2" />
-          {t("theme.moreSettings", "More appearance settings")}
+          {t("theme.moreSettings")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
