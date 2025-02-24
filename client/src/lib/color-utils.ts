@@ -279,16 +279,59 @@ export function adjustControlLuminance(
 export function processThemeColor(hslString: string, isDark: boolean): { 
   background: string;
   foreground: string;
+  hover: string;
 } {
   const [h, s, l] = hslString.split(' ').map(v => parseFloat(v));
   
-  // Ajuster la luminosité du fond
-  const bgL = adjustLuminanceForContrast(h, s, l);
-  // Forcer le texte à contraster avec le fond
-  const fgL = adjustLuminanceForContrast(h, Math.min(s, 10), l, true);
+  // Ajuster la luminosité du fond en fonction du mode
+  const bgL = isDark ? 
+    Math.min(45, l) : // En mode sombre, limiter la luminosité maximale
+    Math.max(55, l);  // En mode clair, assurer une luminosité minimale
+
+  // Réduire la saturation pour les fonds en mode clair
+  const bgS = isDark ? s : Math.min(s, 85);
+
+  // Calculer la luminosité du texte pour un contraste optimal
+  const fgL = isDark ? 90 : 10;
+  
+  // Créer une couleur de survol avec un contraste légèrement différent
+  const hoverL = isDark ? 
+    Math.min(bgL + 10, 60) : // Plus clair en mode sombre
+    Math.max(bgL - 10, 45);  // Plus sombre en mode clair
 
   return {
-    background: `${h} ${s}% ${bgL}%`,
-    foreground: `${h} ${Math.min(s, 10)}% ${fgL}%`
+    background: `${h} ${bgS}% ${bgL}%`,
+    foreground: `${h} ${Math.min(s, 15)}% ${fgL}%`,
+    hover: `${h} ${bgS}% ${hoverL}%`
+  };
+}
+
+// Ajout d'une nouvelle fonction pour calculer les couleurs des boutons
+export function processButtonColors(hslString: string, isDark: boolean): {
+  bg: string;
+  text: string;
+  hover: string;
+  active: string;
+} {
+  const [h, s, l] = hslString.split(' ').map(v => parseFloat(v));
+  
+  // Ajuster la saturation pour éviter les couleurs trop vives
+  const adjustedS = Math.min(s, 70);
+  
+  // Calculer la luminosité de base pour le fond
+  let bgL = isDark ? 35 : 65;
+  
+  // Assurer un contraste minimal avec le texte
+  const textL = isDark ? 95 : 15;
+  
+  // Calculer les états hover et active
+  const hoverL = isDark ? bgL + 10 : bgL - 10;
+  const activeL = isDark ? bgL + 5 : bgL - 5;
+
+  return {
+    bg: `${h} ${adjustedS}% ${bgL}%`,
+    text: `${h} 15% ${textL}%`,
+    hover: `${h} ${adjustedS}% ${hoverL}%`,
+    active: `${h} ${adjustedS}% ${activeL}%`
   };
 }

@@ -11,7 +11,7 @@ import { Palette, Moon, Sun, Settings, Trash2 } from "lucide-react";
 import { themes, type ThemeVariant } from "@/lib/themes";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { getTextColor, adjustLuminanceForContrast, processThemeColor } from "@/lib/color-utils";
+import { getTextColor, adjustLuminanceForContrast, processThemeColor, processButtonColors } from "@/lib/color-utils";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
@@ -43,8 +43,39 @@ export function ThemeSwitcher() {
   };
 
   const handleVariantChange = (variant: ThemeVariant) => {
-    updatePreferences({ themeVariant: variant });
-    // Ne pas utiliser localStorage ici, laisser l'API gérer la persistance
+    try {
+      // Récupérer les couleurs du thème
+      const theme = themes[variant];
+      const isDark = resolvedTheme === 'dark';
+      
+      // Traiter les couleurs primaires et secondaires avec les nouveaux ajustements
+      const primaryColors = processThemeColor(theme.variables.colors.primary, isDark);
+      const secondaryColors = processThemeColor(theme.variables.colors.secondary, isDark);
+      
+      // Appliquer les couleurs de base
+      document.documentElement.style.setProperty('--primary', primaryColors.background);
+      document.documentElement.style.setProperty('--primary-foreground', primaryColors.foreground);
+      document.documentElement.style.setProperty('--primary-hover', primaryColors.hover);
+      
+      document.documentElement.style.setProperty('--secondary', secondaryColors.background);
+      document.documentElement.style.setProperty('--secondary-foreground', secondaryColors.foreground);
+      document.documentElement.style.setProperty('--secondary-hover', secondaryColors.hover);
+      
+      // Appliquer les couleurs des boutons
+      const primaryButtonColors = processButtonColors(theme.variables.colors.primary, isDark);
+      document.documentElement.style.setProperty('--btn-primary', primaryButtonColors.bg);
+      document.documentElement.style.setProperty('--btn-primary-fg', primaryButtonColors.text);
+      document.documentElement.style.setProperty('--btn-primary-hover', primaryButtonColors.hover);
+      document.documentElement.style.setProperty('--btn-primary-active', primaryButtonColors.active);
+
+      // Sauvegarder la variante
+      updatePreferences({
+        themeVariant: variant,
+        customColors: null
+      });
+    } catch (error) {
+      console.error("Erreur lors du changement de variante:", error);
+    }
   };
 
   const setCustomColor = (type: keyof CustomColors) => {
@@ -102,6 +133,40 @@ export function ThemeSwitcher() {
       input.click();
     } catch (error) {
       console.error("Erreur lors de la modification de la couleur:", error);
+    }
+  };
+
+  const handleColorChange = (type: "primary" | "secondary", color: string) => {
+    try {
+      const hsl = hexToHSL(color);
+      const hslString = `${hsl.h} ${hsl.s}% ${hsl.l}%`;
+      const isDark = resolvedTheme === 'dark';
+      
+      // Utiliser les nouvelles fonctions de traitement des couleurs
+      const processedColors = processThemeColor(hslString, isDark);
+      const buttonColors = processButtonColors(hslString, isDark);
+      
+      // Appliquer les couleurs
+      document.documentElement.style.setProperty(`--${type}`, processedColors.background);
+      document.documentElement.style.setProperty(`--${type}-foreground`, processedColors.foreground);
+      document.documentElement.style.setProperty(`--${type}-hover`, processedColors.hover);
+      
+      if (type === 'primary') {
+        document.documentElement.style.setProperty('--btn-primary', buttonColors.bg);
+        document.documentElement.style.setProperty('--btn-primary-fg', buttonColors.text);
+        document.documentElement.style.setProperty('--btn-primary-hover', buttonColors.hover);
+        document.documentElement.style.setProperty('--btn-primary-active', buttonColors.active);
+      }
+      
+      // Sauvegarder les couleurs
+      updatePreferences({
+        customColors: {
+          ...preferences?.customColors,
+          [type]: processedColors.background,
+        },
+      });
+    } catch (error) {
+      console.error(`Error updating ${type} color:`, error);
     }
   };
 

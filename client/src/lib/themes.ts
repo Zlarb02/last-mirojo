@@ -12,7 +12,7 @@ interface ThemeConfig {
   };
 }
 
-// Ensure proper contrast ratios for default theme colors
+// Valeurs HSL de base sans ajustement de contraste
 export const themes: Record<ThemeVariant, ThemeConfig> = {
   classic: {
     name: "Classique",
@@ -20,8 +20,8 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       radius: "0.375rem",
       borderWidth: "1px",
       colors: {
-        primary: "222.2 47.4% 35%",     // Adjusted for better contrast
-        secondary: "217.2 32.6% 40%",   // Adjusted for better contrast
+        primary: "222.2 47.4% 50%",     // Valeur de base
+        secondary: "217.2 32.6% 50%",   // Valeur de base
       }
     }
   },
@@ -31,8 +31,8 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       radius: "1rem",
       borderWidth: "2px",
       colors: {
-        primary: "246 80% 45%",         // Adjusted for better contrast
-        secondary: "280 80% 45%",       // Adjusted for better contrast
+        primary: "246 80% 50%",         // Valeur de base
+        secondary: "280 80% 50%",       // Valeur de base
       }
     }
   },
@@ -42,8 +42,8 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       radius: "0.75rem",
       borderWidth: "1px",
       colors: {
-        primary: "169 60% 40%",         // Adjusted for better contrast
-        secondary: "199 60% 40%",       // Adjusted for better contrast
+        primary: "169 60% 50%",         // Valeur de base
+        secondary: "199 60% 50%",       // Valeur de base
       }
     }
   },
@@ -53,8 +53,8 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       radius: "0",
       borderWidth: "2px",
       colors: {
-        primary: "0 0% 20%",            // Adjusted from pure black for better contrast
-        secondary: "0 0% 35%",          // Adjusted for better contrast
+        primary: "0 0% 40%",            // Valeur de base
+        secondary: "0 0% 50%",          // Valeur de base
       }
     }
   }

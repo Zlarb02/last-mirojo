@@ -49,6 +49,20 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
 
     // Utiliser les préférences du serveur au lieu du localStorage
     if (preferences.themeVariant && themes[preferences.themeVariant as ThemeVariant]) {
+      const currentTheme = themes[preferences.themeVariant as ThemeVariant];
+      const isDark = theme === 'dark';
+
+      if (!preferences.customColors) {
+        // Si pas de couleurs personnalisées, appliquer les couleurs du thème avec ajustements
+        const primaryColors = processThemeColor(currentTheme.variables.colors.primary, isDark);
+        const secondaryColors = processThemeColor(currentTheme.variables.colors.secondary, isDark);
+
+        document.documentElement.style.setProperty('--primary', primaryColors.background);
+        document.documentElement.style.setProperty('--primary-foreground', primaryColors.foreground);
+        document.documentElement.style.setProperty('--secondary', secondaryColors.background);
+        document.documentElement.style.setProperty('--secondary-foreground', secondaryColors.foreground);
+      }
+      
       setVariant(preferences.themeVariant as ThemeVariant);
     }
 
@@ -58,7 +72,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
       setOverlayOpacity(Number(preferences.background.overlay));
       setIsMuted(preferences.background.isMuted ?? true); // Ajouter cette ligne
     }
-  }, [preferences, isLoading]);
+  }, [preferences, isLoading, theme]);
 
   const handleThemeChange = async (mode: ColorMode) => {
     try {
