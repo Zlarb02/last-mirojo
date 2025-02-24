@@ -14,6 +14,7 @@ import "./i18n/config";
 import NewGamePage from "./pages/new-game-page";
 import { useThemePreferences } from "./hooks/use-theme-preferences";
 import { MusicPlayerProvider } from "@/contexts/music-player-context";
+import { BackgroundProvider } from "@/contexts/background-context";
 
 function Router() {
   const { user } = useAuth();
@@ -36,10 +37,12 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <MusicPlayerProvider>
-            <Router />
-            <Toaster />
-          </MusicPlayerProvider>
+          <BackgroundProvider>
+            <MusicPlayerProvider>
+              <Router />
+              <Toaster />
+            </MusicPlayerProvider>
+          </BackgroundProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>

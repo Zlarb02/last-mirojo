@@ -8,15 +8,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Palette, Moon, Sun, Settings, Trash2, Box, Layers, Cloud, Diamond, Palette as PaletteIcon, Waves, Leaf } from "lucide-react";
+import {
+  Palette,
+  Moon,
+  Sun,
+  Settings,
+  Trash2,
+  Box,
+  Layers,
+  Cloud,
+  Diamond,
+  Palette as PaletteIcon,
+  Waves,
+  Leaf,
+} from "lucide-react";
 import { themes, type ThemeVariant } from "@/lib/themes";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import { getTextColor, adjustLuminanceForContrast, processThemeColor, processButtonColors } from "@/lib/color-utils";
+import {
+  getTextColor,
+  adjustLuminanceForContrast,
+  processThemeColor,
+  processButtonColors,
+} from "@/lib/color-utils";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "wouter";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
-import { ColorMode, CustomColors } from '@/lib/client-types';
+import { ColorMode, CustomColors } from "@/lib/client-types";
 import { useQueryClient } from "@tanstack/react-query";
 
 // Ajout des configurations d'icônes pour les presets
@@ -27,7 +45,7 @@ const themeIcons = {
   sharp: Layers,
   retro: PaletteIcon,
   cyber: Waves,
-  nature: Leaf
+  nature: Leaf,
 } as const;
 
 export function ThemeSwitcher() {
@@ -46,7 +64,7 @@ export function ThemeSwitcher() {
     try {
       // Wait for the mutation to complete before allowing a refetch
       await updatePreferences({ themeMode: mode });
-      
+
       // Update local theme only after successful mutation
       setTheme(mode);
     } catch (error) {
@@ -57,34 +75,79 @@ export function ThemeSwitcher() {
   const handleVariantChange = (variant: ThemeVariant) => {
     try {
       const theme = themes[variant];
-      const isDark = resolvedTheme === 'dark';
-      
+      const isDark = resolvedTheme === "dark";
+
       // Appliquer les styles de base
-      document.documentElement.style.setProperty('--border-width', theme.variables.borderWidth);
-      document.documentElement.style.setProperty('--radius', theme.variables.radius);
-      
+      document.documentElement.style.setProperty(
+        "--border-width",
+        theme.variables.borderWidth
+      );
+      document.documentElement.style.setProperty(
+        "--radius",
+        theme.variables.radius
+      );
+
       // Traiter les couleurs avec leur type spécifique
-      const primaryColors = processThemeColor(theme.variables.colors.primary, isDark, 'primary');
-      const secondaryColors = processThemeColor(theme.variables.colors.secondary, isDark, 'secondary');
-      const mutedColors = processThemeColor(theme.variables.colors.muted, isDark, 'muted');
-      
+      const primaryColors = processThemeColor(
+        theme.variables.colors.primary,
+        isDark,
+        "primary"
+      );
+      const secondaryColors = processThemeColor(
+        theme.variables.colors.secondary,
+        isDark,
+        "secondary"
+      );
+      const mutedColors = processThemeColor(
+        theme.variables.colors.muted,
+        isDark,
+        "muted"
+      );
+
       // Appliquer les couleurs avec leurs états
-      document.documentElement.style.setProperty('--primary', primaryColors.background);
-      document.documentElement.style.setProperty('--primary-foreground', primaryColors.foreground);
-      document.documentElement.style.setProperty('--primary-hover', primaryColors.hover);
-      
-      document.documentElement.style.setProperty('--secondary', secondaryColors.background);
-      document.documentElement.style.setProperty('--secondary-foreground', secondaryColors.foreground);
-      document.documentElement.style.setProperty('--secondary-hover', secondaryColors.hover);
-      
-      document.documentElement.style.setProperty('--muted', mutedColors.background);
-      document.documentElement.style.setProperty('--muted-foreground', mutedColors.foreground);
-      document.documentElement.style.setProperty('--muted-hover', mutedColors.hover);
-      
+      document.documentElement.style.setProperty(
+        "--primary",
+        primaryColors.background
+      );
+      document.documentElement.style.setProperty(
+        "--primary-foreground",
+        primaryColors.foreground
+      );
+      document.documentElement.style.setProperty(
+        "--primary-hover",
+        primaryColors.hover
+      );
+
+      document.documentElement.style.setProperty(
+        "--secondary",
+        secondaryColors.background
+      );
+      document.documentElement.style.setProperty(
+        "--secondary-foreground",
+        secondaryColors.foreground
+      );
+      document.documentElement.style.setProperty(
+        "--secondary-hover",
+        secondaryColors.hover
+      );
+
+      document.documentElement.style.setProperty(
+        "--muted",
+        mutedColors.background
+      );
+      document.documentElement.style.setProperty(
+        "--muted-foreground",
+        mutedColors.foreground
+      );
+      document.documentElement.style.setProperty(
+        "--muted-hover",
+        mutedColors.hover
+      );
+
       // Réinitialiser les couleurs personnalisées lors du changement de variante
       updatePreferences({
         themeVariant: variant,
-        customColors: null
+        customColors: null,
       });
     } catch (error) {
       console.error("Failed to update theme variant:", error);
@@ -128,11 +191,20 @@ export function ThemeSwitcher() {
         const color = e.target as HTMLInputElement;
         const hsl = hexToHSL(color.value);
         // Utiliser processThemeColor au lieu de adjustLuminanceForContrast
-        const processedColors = processThemeColor(`${hsl.h} ${hsl.s}% ${hsl.l}%`, resolvedTheme === 'dark');
+        const processedColors = processThemeColor(
+          `${hsl.h} ${hsl.s}% ${hsl.l}%`,
+          resolvedTheme === "dark"
+        );
 
         // Appliquer immédiatement les couleurs
-        document.documentElement.style.setProperty(`--${type}`, processedColors.background);
-        document.documentElement.style.setProperty(`--${type}-foreground`, processedColors.foreground);
+        document.documentElement.style.setProperty(
+          `--${type}`,
+          processedColors.background
+        );
+        document.documentElement.style.setProperty(
+          `--${type}-foreground`,
+          processedColors.foreground
+        );
 
         // Sauvegarder uniquement la couleur de fond
         updatePreferences({
@@ -153,16 +225,25 @@ export function ThemeSwitcher() {
     try {
       const hsl = hexToHSL(color);
       const hslString = `${hsl.h} ${hsl.s}% ${hsl.l}%`;
-      const isDark = resolvedTheme === 'dark';
-      
+      const isDark = resolvedTheme === "dark";
+
       // Utiliser processThemeColor pour les couleurs
       const processedColors = processThemeColor(hslString, isDark);
-      
+
       // Appliquer les couleurs
-      document.documentElement.style.setProperty(`--${type}`, processedColors.background);
-      document.documentElement.style.setProperty(`--${type}-foreground`, processedColors.foreground);
-      document.documentElement.style.setProperty(`--${type}-hover`, processedColors.hover);
-      
+      document.documentElement.style.setProperty(
+        `--${type}`,
+        processedColors.background
+      );
+      document.documentElement.style.setProperty(
+        `--${type}-foreground`,
+        processedColors.foreground
+      );
+      document.documentElement.style.setProperty(
+        `--${type}-hover`,
+        processedColors.hover
+      );
+
       // Mettre à jour les préférences
       updatePreferences({
         customColors: {

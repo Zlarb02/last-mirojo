@@ -1,4 +1,11 @@
-export type ThemeVariant = "classic" | "modern" | "soft" | "sharp" | "retro" | "cyber" | "nature";
+export type ThemeVariant =
+  | "classic"
+  | "modern"
+  | "soft"
+  | "sharp"
+  | "retro"
+  | "cyber"
+  | "nature";
 
 interface ThemeConfig {
   name: string;
@@ -23,9 +30,9 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       colors: {
         primary: "220 91% 54%",
         secondary: "217 91% 60%",
-        muted: "220 14% 96%"
-      }
-    }
+        muted: "220 14% 96%",
+      },
+    },
   },
   modern: {
     name: "Moderne",
@@ -35,9 +42,9 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       colors: {
         primary: "262 83% 58%",
         secondary: "316 70% 50%",
-        muted: "262 10% 96%"  // Ajuster pour modern
-      }
-    }
+        muted: "262 10% 96%", // Ajuster pour modern
+      },
+    },
   },
   soft: {
     name: "Doux",
@@ -47,9 +54,9 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       colors: {
         primary: "169 60% 50%",
         secondary: "199 60% 50%",
-        muted: "199 14% 96%"
-      }
-    }
+        muted: "199 14% 96%",
+      },
+    },
   },
   sharp: {
     name: "Net",
@@ -59,33 +66,33 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       colors: {
         primary: "0 0% 40%",
         secondary: "0 0% 50%",
-        muted: "0 0% 96%"
-      }
-    }
+        muted: "0 0% 96%",
+      },
+    },
   },
   retro: {
     name: "Retro",
     variables: {
-      radius: "0",
+      radius: "0.4rem",
       borderWidth: "4px",
       colors: {
         primary: "35 92% 58%",
         secondary: "338 92% 56%",
-        muted: "35 14% 96%"
-      }
-    }
+        muted: "35 14% 96%",
+      },
+    },
   },
   cyber: {
     name: "Cyber",
     variables: {
-      radius: "0",
+      radius: "0 0rem 0 1rem",
       borderWidth: "2px",
       colors: {
         primary: "326 100% 50%",
         secondary: "180 100% 50%",
-        muted: "326 14% 96%"
-      }
-    }
+        muted: "326 14% 96%",
+      },
+    },
   },
   nature: {
     name: "Nature",
@@ -95,8 +102,8 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       colors: {
         primary: "142 72% 29%",
         secondary: "168 83% 32%",
-        muted: "142 14% 96%"
-      }
-    }
-  }
+        muted: "142 14% 96%",
+      },
+    },
+  },
 };

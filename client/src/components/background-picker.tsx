@@ -104,9 +104,11 @@ export function BackgroundPicker({
 
   const searchUnsplash = async (query: string) => {
     if (!query) return [];
-    
+
     try {
-      const res = await fetch(`/api/unsplash/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(
+        `/api/unsplash/search?q=${encodeURIComponent(query)}`
+      );
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
@@ -164,7 +166,9 @@ export function BackgroundPicker({
           key={image.id}
           className={cn(
             "group relative aspect-video cursor-pointer overflow-hidden rounded-lg",
-            selected?.type === "image" && selected.url === image.url && "ring-2 ring-primary"
+            selected?.type === "image" &&
+              selected.url === image.url &&
+              "ring-2 ring-primary"
           )}
           onClick={() => onSelect("image", image.url)}
         >
@@ -182,29 +186,29 @@ export function BackgroundPicker({
         </div>
       ))
     : filteredBackgrounds.images.map((image, index) => (
-      <div
-        key={index}
-        className={cn(
-          "group relative aspect-video cursor-pointer overflow-hidden rounded-lg",
-          selected?.type === "image" &&
-            selected.url === image.url &&
-            "ring-2 ring-primary"
-        )}
-        onClick={() => onSelect("image", image.url)}
-      >
-        <img
-          src={image.thumbnail}
-          alt={image.title}
-          className="object-cover transition-transform group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100" />
-        <div className="absolute inset-0 flex items-center justify-center p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
-          <span className="text-center text-sm font-medium">
-            {image.title}
-          </span>
+        <div
+          key={index}
+          className={cn(
+            "group relative aspect-video cursor-pointer overflow-hidden rounded-lg",
+            selected?.type === "image" &&
+              selected.url === image.url &&
+              "ring-2 ring-primary"
+          )}
+          onClick={() => onSelect("image", image.url)}
+        >
+          <img
+            src={image.thumbnail}
+            alt={image.title}
+            className="object-cover transition-transform group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-black/60 opacity-0 transition-opacity group-hover:opacity-100" />
+          <div className="absolute inset-0 flex items-center justify-center p-2 text-white opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="text-center text-sm font-medium">
+              {image.title}
+            </span>
+          </div>
         </div>
-      </div>
-    ));
+      ));
 
   return (
     <div className={cn("flex flex-col gap-4", containerClassName)}>
@@ -363,22 +367,20 @@ export function BackgroundPicker({
                 />
               </div>
 
-              {typeof duration === "number" && duration > 0 && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between">
-                    <Label>{t("theme.background.time")}</Label>
-                    <span className="text-sm text-muted-foreground">
-                      {formatTime(currentTime || 0)} / {formatTime(duration)}
-                    </span>
-                  </div>
-                  <Slider
-                    value={[currentTime || 0]}
-                    max={duration}
-                    step={1}
-                    onValueChange={(value) => onTimeChange(value[0])}
-                  />
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <Label>{t("theme.background.time")}</Label>
+                  <span className="text-sm text-muted-foreground">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
                 </div>
-              )}
+                <Slider
+                  value={[currentTime]}
+                  max={duration || 600} // Valeur par défaut si duration n'est pas définie
+                  step={1}
+                  onValueChange={(value) => onTimeChange(value[0])}
+                />
+              </div>
             </>
           )}
         </div>

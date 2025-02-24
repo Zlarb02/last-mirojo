@@ -8,6 +8,7 @@ export interface CustomColors {
 }
 
 export interface BackgroundConfig {
+  volume: number;
   type: BackgroundType;
   url: string;
   overlay: string;

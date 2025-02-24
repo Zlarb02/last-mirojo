@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTheme } from "next-themes";
 import { useLayoutEffect } from "react";
 import { themes, ThemeVariant } from "@/lib/themes";
-import { ThemePreferences } from '@/lib/client-types';
+import { ThemePreferences } from "@/lib/client-types";
 import { useBackground } from "./use-background";
 
 interface UseThemePreferencesReturn {
@@ -14,6 +14,7 @@ interface UseThemePreferencesReturn {
 export function useThemePreferences(): UseThemePreferencesReturn {
   const { theme, setTheme } = useTheme();
   const queryClient = useQueryClient();
+  const { updateBackground } = useBackground(); // Déplacer ici l'appel du hook
 
   const { data: preferences, isLoading } = useQuery<ThemePreferences>({
     queryKey: ["theme-preferences"],
@@ -35,52 +36,56 @@ export function useThemePreferences(): UseThemePreferencesReturn {
     gcTime: 1000 * 60 * 30, // 30 minutes
   });
 
-  const { mutate: updatePreferences, mutateAsync: updatePreferencesAsync } = useMutation({
-    mutationFn: async (newPrefs: Partial<ThemePreferences>) => {
-      const res = await fetch("/api/user/theme-preferences", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newPrefs),
-      });
-      if (!res.ok) throw new Error("Failed to update preferences");
-      // Ne pas essayer de parser la réponse comme du JSON
-      return newPrefs; // Retourner les nouvelles préférences telles quelles
-    },
-    onMutate: async (newPrefs) => {
-      // Cancel any outgoing refetches to avoid showing stale data
-      await queryClient.cancelQueries({ queryKey: ["theme-preferences"] });
+  const { mutate: updatePreferences, mutateAsync: updatePreferencesAsync } =
+    useMutation({
+      mutationFn: async (newPrefs: Partial<ThemePreferences>) => {
+        const res = await fetch("/api/user/theme-preferences", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newPrefs),
+        });
+        if (!res.ok) throw new Error("Failed to update preferences");
+        // Ne pas essayer de parser la réponse comme du JSON
+        return newPrefs; // Retourner les nouvelles préférences telles quelles
+      },
+      onMutate: async (newPrefs) => {
+        // Cancel any outgoing refetches to avoid showing stale data
+        await queryClient.cancelQueries({ queryKey: ["theme-preferences"] });
 
-      if (newPrefs.themeMode) {
-        // Attendre que next-themes termine la mise à jour
-        await setTheme(newPrefs.themeMode);
-      }
+        if (newPrefs.themeMode) {
+          // Attendre que next-themes termine la mise à jour
+          await setTheme(newPrefs.themeMode);
+        }
 
-      // Appliquer les changements immédiatement avant la requête
-      applyThemePreferences(newPrefs);
+        // Appliquer les changements immédiatement avant la requête
+        applyThemePreferences(newPrefs);
 
-      // Mettre à jour le cache optimistiquement
-      const previousPrefs = queryClient.getQueryData(["theme-preferences"]);
-      queryClient.setQueryData(["theme-preferences"], (old: any) => ({
-        ...old,
-        ...newPrefs,
-      }));
+        // Mettre à jour le cache optimistiquement
+        const previousPrefs = queryClient.getQueryData(["theme-preferences"]);
+        queryClient.setQueryData(["theme-preferences"], (old: any) => ({
+          ...old,
+          ...newPrefs,
+        }));
 
-      return { previousPrefs };
-    },
-    onError: (error, variables, context) => {
-      // En cas d'erreur, restaurer les préférences précédentes
-      if (context?.previousPrefs) {
-        queryClient.setQueryData(["theme-preferences"], context.previousPrefs);
-        applyThemePreferences(context.previousPrefs as ThemePreferences);
-      }
-    },
-    onSettled: () => {
-      // Wait for mutation to complete before allowing refetches
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["theme-preferences"] });
-      }, 100);
-    },
-  });
+        return { previousPrefs };
+      },
+      onError: (error, variables, context) => {
+        // En cas d'erreur, restaurer les préférences précédentes
+        if (context?.previousPrefs) {
+          queryClient.setQueryData(
+            ["theme-preferences"],
+            context.previousPrefs
+          );
+          applyThemePreferences(context.previousPrefs as ThemePreferences);
+        }
+      },
+      onSettled: () => {
+        // Wait for mutation to complete before allowing refetches
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["theme-preferences"] });
+        }, 100);
+      },
+    });
 
   const applyThemePreferences = (prefs: Partial<ThemePreferences>) => {
     if (!prefs) return;
@@ -91,17 +96,29 @@ export function useThemePreferences(): UseThemePreferencesReturn {
       // Appliquer la variante du thème
       if (prefs.themeVariant && themes[prefs.themeVariant as ThemeVariant]) {
         const config = themes[prefs.themeVariant as ThemeVariant];
-        
+
         // Appliquer les variables de base du thème
-        document.documentElement.style.setProperty("--radius", config.variables.radius);
-        document.documentElement.style.setProperty("--border-width", config.variables.borderWidth);
-        
+        document.documentElement.style.setProperty(
+          "--radius",
+          config.variables.radius
+        );
+        document.documentElement.style.setProperty(
+          "--border-width",
+          config.variables.borderWidth
+        );
+
         // Appliquer les couleurs du thème sauf si des couleurs personnalisées existent
         if (!prefs.customColors?.primary) {
-          document.documentElement.style.setProperty("--primary", config.variables.colors.primary);
+          document.documentElement.style.setProperty(
+            "--primary",
+            config.variables.colors.primary
+          );
         }
         if (!prefs.customColors?.secondary) {
-          document.documentElement.style.setProperty("--secondary", config.variables.colors.secondary);
+          document.documentElement.style.setProperty(
+            "--secondary",
+            config.variables.colors.secondary
+          );
         }
       }
 
@@ -121,7 +138,14 @@ export function useThemePreferences(): UseThemePreferencesReturn {
       }
 
       if (prefs.background) {
-        handleBackground(prefs.background);
+        const bg = prefs.background;
+        updateBackground(
+          bg.type,
+          bg.url,
+          Number(bg.overlay),
+          bg.isMuted ?? true,
+          bg.volume ?? 0.5
+        );
       }
     } catch (error) {
       console.error("Erreur lors de l'application des préférences:", error);
@@ -132,47 +156,15 @@ export function useThemePreferences(): UseThemePreferencesReturn {
     }
   };
 
-  const handleBackground = (bg: ThemePreferences["background"]) => {
-    if (!bg) return;
-
-    const cleanupOldBackground = () => {
-      document.documentElement.style.removeProperty("--bg-image");
-      const media = document.querySelector(
-        ".bg-screen video, .bg-screen iframe"
-      );
-      if (media) media.remove();
-    };
-
-    cleanupOldBackground();
-
-    // Appliquer le background avec l'état muted sauvegardé
-    if (bg.type === "video" && bg.url) {
-      const { updateBackground } = useBackground();
-      updateBackground(bg.type, bg.url, Number(bg.overlay), bg.isMuted ?? true);
-    } else if (bg.type === "image" && bg.url) {
-      document.documentElement.style.setProperty(
-        "--bg-image",
-        `url(${bg.url})`
-      );
-    }
-
-    if (bg.overlay) {
-      document.documentElement.style.setProperty(
-        "--bg-overlay-opacity",
-        bg.overlay
-      );
-    }
-  };
-
   useLayoutEffect(() => {
     if (preferences && !isLoading) {
       applyThemePreferences(preferences);
     }
   }, [preferences, isLoading]);
 
-  return { 
-    preferences, 
-    isLoading, 
-    updatePreferences: updatePreferencesAsync  // Export the async version
+  return {
+    preferences,
+    isLoading,
+    updatePreferences: updatePreferencesAsync, // Export the async version
   };
 }

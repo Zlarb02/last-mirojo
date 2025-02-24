@@ -19,7 +19,11 @@ import { Button } from "../ui/button";
 import * as Icons from "lucide-react";
 import { BackgroundPicker } from "../background-picker";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
-import { BackgroundType, ColorMode, ThemePreferences } from '@/lib/client-types';
+import {
+  BackgroundType,
+  ColorMode,
+  ThemePreferences,
+} from "@/lib/client-types";
 import { useQueryClient } from "@tanstack/react-query";
 import { useBackground } from "@/hooks/use-background";
 import { useLocation } from "wouter";
@@ -51,21 +55,42 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     if (!preferences || isLoading) return;
 
     // Utiliser les préférences du serveur au lieu du localStorage
-    if (preferences.themeVariant && themes[preferences.themeVariant as ThemeVariant]) {
+    if (
+      preferences.themeVariant &&
+      themes[preferences.themeVariant as ThemeVariant]
+    ) {
       const currentTheme = themes[preferences.themeVariant as ThemeVariant];
-      const isDark = theme === 'dark';
+      const isDark = theme === "dark";
 
       if (!preferences.customColors) {
         // Si pas de couleurs personnalisées, appliquer les couleurs du thème avec ajustements
-        const primaryColors = processThemeColor(currentTheme.variables.colors.primary, isDark);
-        const secondaryColors = processThemeColor(currentTheme.variables.colors.secondary, isDark);
+        const primaryColors = processThemeColor(
+          currentTheme.variables.colors.primary,
+          isDark
+        );
+        const secondaryColors = processThemeColor(
+          currentTheme.variables.colors.secondary,
+          isDark
+        );
 
-        document.documentElement.style.setProperty('--primary', primaryColors.background);
-        document.documentElement.style.setProperty('--primary-foreground', primaryColors.foreground);
-        document.documentElement.style.setProperty('--secondary', secondaryColors.background);
-        document.documentElement.style.setProperty('--secondary-foreground', secondaryColors.foreground);
+        document.documentElement.style.setProperty(
+          "--primary",
+          primaryColors.background
+        );
+        document.documentElement.style.setProperty(
+          "--primary-foreground",
+          primaryColors.foreground
+        );
+        document.documentElement.style.setProperty(
+          "--secondary",
+          secondaryColors.background
+        );
+        document.documentElement.style.setProperty(
+          "--secondary-foreground",
+          secondaryColors.foreground
+        );
       }
-      
+
       setVariant(preferences.themeVariant as ThemeVariant);
     }
 
@@ -77,11 +102,47 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     }
   }, [preferences, isLoading, theme]);
 
+  useEffect(() => {
+    // Mettre à jour les valeurs de la vidéo depuis les préférences
+    if (preferences?.background) {
+      const bg = preferences.background;
+      setBgType(bg.type);
+      setBgUrl(bg.url);
+      setOverlayOpacity(Number(bg.overlay));
+      setIsMuted(bg.isMuted ?? true);
+      setVideoVolume(bg.volume ?? 0.5);
+    }
+
+    // Initialiser l'écouteur de messages YouTube
+    const handleYouTubeMessage = (event: MessageEvent) => {
+      if (event.origin !== "https://www.youtube.com") return;
+
+      try {
+        const data =
+          typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        if (data.event === "infoDelivery" || data.info) {
+          const info = data.info || data;
+          if (typeof info.duration === "number") {
+            setVideoDuration(info.duration);
+          }
+          if (typeof info.currentTime === "number") {
+            setVideoCurrentTime(info.currentTime);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse YouTube message:", e);
+      }
+    };
+
+    window.addEventListener("message", handleYouTubeMessage);
+    return () => window.removeEventListener("message", handleYouTubeMessage);
+  }, [preferences]);
+
   const handleThemeChange = async (mode: ColorMode) => {
     try {
       // Mise à jour en base de données
       await updatePreferences({ themeMode: mode });
-      
+
       // Mise à jour du thème local
       setTheme(mode);
     } catch (error) {
@@ -92,31 +153,64 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const handleVariantChange = (newVariant: ThemeVariant) => {
     try {
       const themeConfig = themes[newVariant];
-      const isDark = theme === 'dark';
-  
+      const isDark = theme === "dark";
+
       // Appliquer le border-width et le radius
-      document.documentElement.style.setProperty("--border-width", themeConfig.variables.borderWidth);
-      document.documentElement.style.setProperty("--radius", themeConfig.variables.radius);
-  
+      document.documentElement.style.setProperty(
+        "--border-width",
+        themeConfig.variables.borderWidth
+      );
+      document.documentElement.style.setProperty(
+        "--radius",
+        themeConfig.variables.radius
+      );
+
       // Appliquer les couleurs avec processThemeColor
-      const primaryColors = processThemeColor(themeConfig.variables.colors.primary, isDark);
-      const secondaryColors = processThemeColor(themeConfig.variables.colors.secondary, isDark);
-      const mutedColors = processThemeColor(themeConfig.variables.colors.muted, isDark);
-  
+      const primaryColors = processThemeColor(
+        themeConfig.variables.colors.primary,
+        isDark
+      );
+      const secondaryColors = processThemeColor(
+        themeConfig.variables.colors.secondary,
+        isDark
+      );
+      const mutedColors = processThemeColor(
+        themeConfig.variables.colors.muted,
+        isDark
+      );
+
       // Appliquer toutes les couleurs
-      document.documentElement.style.setProperty('--primary', primaryColors.background);
-      document.documentElement.style.setProperty('--primary-foreground', primaryColors.foreground);
-      
-      document.documentElement.style.setProperty('--secondary', secondaryColors.background);
-      document.documentElement.style.setProperty('--secondary-foreground', secondaryColors.foreground);
-      
-      document.documentElement.style.setProperty('--muted', mutedColors.background);
-      document.documentElement.style.setProperty('--muted-foreground', mutedColors.foreground);
-  
+      document.documentElement.style.setProperty(
+        "--primary",
+        primaryColors.background
+      );
+      document.documentElement.style.setProperty(
+        "--primary-foreground",
+        primaryColors.foreground
+      );
+
+      document.documentElement.style.setProperty(
+        "--secondary",
+        secondaryColors.background
+      );
+      document.documentElement.style.setProperty(
+        "--secondary-foreground",
+        secondaryColors.foreground
+      );
+
+      document.documentElement.style.setProperty(
+        "--muted",
+        mutedColors.background
+      );
+      document.documentElement.style.setProperty(
+        "--muted-foreground",
+        mutedColors.foreground
+      );
+
       // Sauvegarder les préférences
       updatePreferences({
         themeVariant: newVariant,
-        customColors: null // Réinitialiser les couleurs personnalisées
+        customColors: null, // Réinitialiser les couleurs personnalisées
       });
       setVariant(newVariant);
     } catch (error) {
@@ -124,14 +218,17 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     }
   };
 
-  const handleColorChange = (type: "primary" | "secondary" | "muted", color: string) => {
+  const handleColorChange = (
+    type: "primary" | "secondary" | "muted",
+    color: string
+  ) => {
     try {
       const hsl = hexToHSL(color);
       const hslString = `${hsl.h} ${hsl.s}% ${hsl.l}%`;
-      
+
       // Utiliser processThemeColor pour obtenir les couleurs optimisées
-      const processedColors = processThemeColor(hslString, theme === 'dark');
-      
+      const processedColors = processThemeColor(hslString, theme === "dark");
+
       // Mise à jour des couleurs de fond et de texte
       document.documentElement.style.setProperty(
         `--${type}`,
@@ -147,7 +244,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
         `--dynamic-${type}-foreground`,
         getDynamicTextColor(processedColors.background)
       );
-      
+
       // Mise à jour des préférences
       updatePreferences({
         customColors: {
@@ -183,57 +280,65 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
 
   const getCurrentHexColor = (variable: string) => {
     // Déterminer le type de couleur à partir de la variable
-    const colorType = variable === "--primary" 
-      ? "primary" 
-      : variable === "--secondary" 
+    const colorType =
+      variable === "--primary"
+        ? "primary"
+        : variable === "--secondary"
         ? "secondary"
         : "muted";
-    
+
     try {
       // D'abord essayer de récupérer la couleur depuis les préférences
       if (preferences?.customColors?.[colorType]) {
         const [h, s, l] = preferences.customColors[colorType]
           .split(" ")
-          .map(v => parseFloat(v.replace("%", "")));
-        
+          .map((v) => parseFloat(v.replace("%", "")));
+
         if (!isNaN(h) && !isNaN(s) && !isNaN(l)) {
           const [r, g, b] = hslToRGB(h, s, l);
           return `#${[r, g, b]
-            .map(x => x.toString(16).padStart(2, '0'))
-            .join('')}`;
+            .map((x) => x.toString(16).padStart(2, "0"))
+            .join("")}`;
         }
       }
 
       // Pour les couleurs muted, créer une version moins saturée de la couleur secondaire
       if (colorType === "muted") {
         const computedStyle = getComputedStyle(document.documentElement);
-        const mutedColor = computedStyle.getPropertyValue('--muted').trim();
+        const mutedColor = computedStyle.getPropertyValue("--muted").trim();
         if (mutedColor) {
-          const [h, s, l] = mutedColor.split(" ").map(v => parseFloat(v));
+          const [h, s, l] = mutedColor.split(" ").map((v) => parseFloat(v));
           if (!isNaN(h) && !isNaN(s) && !isNaN(l)) {
             const [r, g, b] = hslToRGB(h, s, l);
             return `#${[r, g, b]
-              .map(x => x.toString(16).padStart(2, '0'))
-              .join('')}`;
+              .map((x) => x.toString(16).padStart(2, "0"))
+              .join("")}`;
           }
         }
       }
 
       // Sinon utiliser la couleur du thème actuel
       const currentTheme = themes[variant];
-      const themeColor = colorType === "muted" 
-        ? processThemeColor(currentTheme.variables.colors.secondary, theme === 'dark').background 
-        : currentTheme.variables.colors[colorType];
+      const themeColor =
+        colorType === "muted"
+          ? processThemeColor(
+              currentTheme.variables.colors.secondary,
+              theme === "dark"
+            ).background
+          : currentTheme.variables.colors[colorType];
 
-      const [h, s, l] = themeColor.split(" ").map(v => parseFloat(v));
+      const [h, s, l] = themeColor.split(" ").map((v) => parseFloat(v));
       const [r, g, b] = hslToRGB(h, s, l);
       return `#${[r, g, b]
-        .map(x => x.toString(16).padStart(2, '0'))
-        .join('')}`;
-
+        .map((x) => x.toString(16).padStart(2, "0"))
+        .join("")}`;
     } catch (error) {
       console.warn(`Error getting color for ${variable}:`, error);
-      return colorType === "primary" ? "#000000" : colorType === "secondary" ? "#666666" : "#999999";
+      return colorType === "primary"
+        ? "#000000"
+        : colorType === "secondary"
+        ? "#666666"
+        : "#999999";
     }
   };
 
@@ -307,7 +412,9 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
       iframe.height = "100%";
       iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=0&mute=${
         isMuted ? "1" : "0"
-      }&loop=1&playlist=${youtubeId}&playsinline=1&disablekb=1&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&enablejsapi=1`; // Ajout de enablejsapi=1
+      }&loop=1&playlist=${youtubeId}&playsinline=1&disablekb=1&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&enablejsapi=1&origin=${
+        window.location.origin
+      }&widget_referrer=${window.location.origin}`; // Ajouter ces paramètres à l'URL
       iframe.allow =
         "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
       iframe.style.position = "fixed";
@@ -325,6 +432,19 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
 
       // Ajouter un identifiant unique à l'iframe
       iframe.id = "youtube-player";
+
+      // Ajouter un gestionnaire d'événements pour la préparation de l'iframe
+      iframe.onload = () => {
+        if (iframe.contentWindow) {
+          iframe.contentWindow.postMessage(
+            JSON.stringify({
+              event: "listening",
+              id: "youtube-player",
+            }),
+            "https://www.youtube.com"
+          );
+        }
+      };
 
       if (bgScreen) {
         bgScreen.appendChild(iframe);
@@ -350,7 +470,13 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
 
     // Appliquer immédiatement le changement
     if (bgType === "video" && bgUrl) {
-      updateBackground(bgType, bgUrl, overlayOpacity, newMutedState, videoVolume);
+      updateBackground(
+        bgType,
+        bgUrl,
+        overlayOpacity,
+        newMutedState,
+        videoVolume
+      );
     }
 
     // Sauvegarder en base de données
@@ -359,21 +485,25 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
         type: bgType,
         url: bgUrl,
         overlay: overlayOpacity.toString(),
-        isMuted: newMutedState
-      }
+        isMuted: newMutedState,
+        volume: videoVolume,
+      },
     });
 
-// Mettre à jour l'iframe existante si elle existe
-const iframe =
-document.querySelector<HTMLIFrameElement>(".bg-screen iframe");
-if (iframe) {
-const currentSrc = new URL(iframe.src);
-currentSrc.searchParams.set("mute", newMutedState ? "1" : "0");
-iframe.src = currentSrc.toString();
-}
-};
+    // Mettre à jour l'iframe existante si elle existe
+    const iframe =
+      document.querySelector<HTMLIFrameElement>(".bg-screen iframe");
+    if (iframe) {
+      const currentSrc = new URL(iframe.src);
+      currentSrc.searchParams.set("mute", newMutedState ? "1" : "0");
+      iframe.src = currentSrc.toString();
+    }
+  };
 
-  const handleBackgroundChange = async (type: BackgroundType, url: string = "") => {
+  const handleBackgroundChange = async (
+    type: BackgroundType,
+    url: string = ""
+  ) => {
     setBgType(type);
     setBgUrl(url);
 
@@ -386,7 +516,8 @@ iframe.src = currentSrc.toString();
         type,
         url,
         overlay: overlayOpacity.toString(),
-        isMuted // Ajouter cette ligne
+        isMuted,
+        volume: videoVolume,
       },
     });
   };
@@ -415,28 +546,13 @@ iframe.src = currentSrc.toString();
     }
   };
 
-  /*************  ✨ Codeium Command ⭐  *************/
-  /**
- * Updates the overlay opacity for the background theme.
- *
- * @param {number} value - The new opacity value for the overlay.
- * 
- * This function updates the local state and applies the new overlay opacity
- * directly to the DOM. It also persists the updated opacity value by sending
-/******  a9deac8c-47ac-4dea-85ed-a0db07226556  *******/
   const handleOpacityChange = async (value: number) => {
-    console.log("New opacity:", value); // Debug
-
-    // Mettre à jour l'état local immédiatement
     setOverlayOpacity(value);
-
-    // Appliquer directement sur le DOM
     document.documentElement.style.setProperty(
       "--bg-overlay-opacity",
       value.toString()
     );
 
-    // Attendre la fin de la mise à jour de l'état avant de sauvegarder
     await fetch("/api/user/theme-preferences", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -449,6 +565,28 @@ iframe.src = currentSrc.toString();
       }),
     });
   };
+
+  function seekTo(time: number) {
+    // Try to seek in both video and YouTube iframe elements
+    const video = document.querySelector<HTMLVideoElement>(".bg-screen video");
+    const iframe = document.querySelector<HTMLIFrameElement>("#youtube-player");
+
+    if (video) {
+      // For regular video elements
+      video.currentTime = time;
+    } else if (iframe) {
+      // For YouTube iframe API
+      const message = {
+        event: "command",
+        func: "seekTo",
+        args: [time, true],
+      };
+      iframe.contentWindow?.postMessage(
+        JSON.stringify(message),
+        "https://www.youtube.com"
+      );
+    }
+  }
 
   // Modifier la partie du rendu pour inclure la section background
   return (
@@ -495,11 +633,11 @@ iframe.src = currentSrc.toString();
                   className="flex flex-col items-center justify-center gap-2 h-24"
                   onClick={() => handleVariantChange(key as ThemeVariant)}
                 >
-                  <div 
+                  <div
                     className="w-8 h-8 rounded"
                     style={{
                       background: `hsl(${theme.variables.colors.primary})`,
-                      border: `${theme.variables.borderWidth} solid hsl(${theme.variables.colors.secondary})`
+                      border: `${theme.variables.borderWidth} solid hsl(${theme.variables.colors.secondary})`,
                     }}
                   />
                   <span>{theme.name}</span>
@@ -508,7 +646,7 @@ iframe.src = currentSrc.toString();
               <Button
                 variant="outline"
                 className="flex flex-col items-center justify-center gap-2 h-24"
-                >
+              >
                 <Icons.Plus className="h-6 w-6" />
                 <span>{t("theme.custom")}</span>
               </Button>
@@ -549,17 +687,13 @@ iframe.src = currentSrc.toString();
                 />
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <Label htmlFor="muted-color">
-                  {t("theme.mutedColor")}
-                </Label>
+                <Label htmlFor="muted-color">{t("theme.mutedColor")}</Label>
                 <Input
                   id="muted-color"
                   type="color"
                   className="h-10 w-full sm:w-20"
                   value={getCurrentHexColor("--muted")}
-                  onChange={(e) =>
-                    handleColorChange("muted", e.target.value)
-                  }
+                  onChange={(e) => handleColorChange("muted", e.target.value)}
                 />
               </div>
             </div>
@@ -579,7 +713,10 @@ iframe.src = currentSrc.toString();
                 <RadioGroup
                   defaultValue={themes[variant].variables.radius}
                   onValueChange={(value) => {
-                    document.documentElement.style.setProperty("--radius", value);
+                    document.documentElement.style.setProperty(
+                      "--radius",
+                      value
+                    );
                   }}
                 >
                   <div className="grid grid-cols-3 gap-4">
@@ -590,7 +727,10 @@ iframe.src = currentSrc.toString();
                     </Label>
                     <Label className="flex flex-col items-center space-y-2">
                       <RadioGroupItem value="0.5rem" className="sr-only" />
-                      <div style={{ borderRadius: "0.5rem" }} className="w-12 h-12 border-2 border-primary" />
+                      <div
+                        style={{ borderRadius: "0.5rem" }}
+                        className="w-12 h-12 border-2 border-primary"
+                      />
                       <span>{t("theme.medium")}</span>
                     </Label>
                     <Label className="flex flex-col items-center space-y-2">
@@ -598,17 +738,19 @@ iframe.src = currentSrc.toString();
                       <div className="w-12 h-12 rounded-xl border-2 border-primary" />
                       <span>{t("theme.rounded")}</span>
                     </Label>
-
                   </div>
                 </RadioGroup>
               </div>
-              
+
               <div className="flex flex-col space-y-2">
                 <Label>{t("theme.borderWidth")}</Label>
                 <RadioGroup
                   defaultValue={themes[variant].variables.borderWidth}
                   onValueChange={(value) => {
-                    document.documentElement.style.setProperty("--border-width", value);
+                    document.documentElement.style.setProperty(
+                      "--border-width",
+                      value
+                    );
                   }}
                 >
                   <div className="grid grid-cols-3 gap-4">
@@ -648,6 +790,12 @@ iframe.src = currentSrc.toString();
               onSelect={(type, url) => handleBackgroundChange(type, url)}
               onVolumeChange={handleVolumeChange}
               onOpacityChange={handleOpacityChange}
+              onTimeChange={(time) => {
+                setVideoCurrentTime(time);
+                if (bgType === "video") {
+                  seekTo(time);
+                }
+              }}
               volume={videoVolume}
               opacity={overlayOpacity}
               currentTime={videoCurrentTime}

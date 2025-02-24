@@ -1,9 +1,19 @@
-import { useState, useEffect } from 'react';
-import { BackgroundType } from '@/lib/client-types';
+import { useState, useEffect, useRef } from "react";
+import { BackgroundType } from "@/lib/client-types";
 
 export function useBackground() {
-  const updateBackgroundVideo = (url: string, isMuted: boolean = true, volume: number = 0.5) => {
-    const oldMedia = document.querySelector(".bg-screen video, .bg-screen iframe");
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const youtubePlayerRef = useRef<Window | null>(null);
+
+  const updateBackgroundVideo = (
+    url: string,
+    isMuted: boolean = true,
+    volume: number = 0.5
+  ) => {
+    const oldMedia = document.querySelector(
+      ".bg-screen video, .bg-screen iframe"
+    );
     if (oldMedia) {
       oldMedia.remove();
     }
@@ -19,8 +29,11 @@ export function useBackground() {
       iframe.height = "100%";
       iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=0&mute=${
         isMuted ? "1" : "0"
-      }&loop=1&playlist=${youtubeId}&playsinline=1&disablekb=1&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&enablejsapi=1&origin=${window.location.origin}`;
-      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+      }&loop=1&playlist=${youtubeId}&playsinline=1&disablekb=1&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&enablejsapi=1&origin=${
+        window.location.origin
+      }`;
+      iframe.allow =
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
       iframe.id = "youtube-player";
       Object.assign(iframe.style, {
         position: "fixed",
@@ -50,6 +63,7 @@ export function useBackground() {
             }),
             "*"
           );
+          updateTimeInfo(player);
         }
       }, 1000);
     } else if (bgScreen) {
@@ -76,16 +90,78 @@ export function useBackground() {
         zIndex: "0",
       });
       bgScreen.appendChild(video);
-      
+
       // Force le démarrage de la vidéo
       video.play().catch(console.error);
     }
   };
 
-  const updateBackground = (type: BackgroundType, url: string = "", opacity: number = 0.85, isMuted: boolean = true, volume: number = 0.5) => {
+  const updateTimeInfo = (player: Window) => {
+    youtubePlayerRef.current = player;
+
+    // Initialiser la connexion avec le player YouTube
+    player.postMessage(
+      JSON.stringify({
+        event: "listening",
+        id: "youtube-player",
+        channel: "widget",
+      }),
+      "https://www.youtube.com"
+    );
+
+    // Demander la durée et le temps actuel
+    const requestInfo = () => {
+      player.postMessage(
+        JSON.stringify({
+          event: "command",
+          func: "getDuration",
+          args: [],
+        }),
+        "https://www.youtube.com"
+      );
+
+      player.postMessage(
+        JSON.stringify({
+          event: "command",
+          func: "getCurrentTime",
+          args: [],
+        }),
+        "https://www.youtube.com"
+      );
+    };
+
+    // Demander les infos immédiatement et toutes les secondes
+    requestInfo();
+    const interval = setInterval(requestInfo, 1000);
+
+    return () => clearInterval(interval);
+  };
+
+  const seekTo = (time: number) => {
+    if (youtubePlayerRef.current) {
+      youtubePlayerRef.current.postMessage(
+        JSON.stringify({
+          event: "command",
+          func: "seekTo",
+          args: [time],
+        }),
+        "*"
+      );
+    }
+  };
+
+  const updateBackground = (
+    type: BackgroundType,
+    url: string = "",
+    opacity: number = 0.85,
+    isMuted: boolean = true,
+    volume: number = 0.5
+  ) => {
     // Nettoyer l'ancien background
     document.documentElement.style.removeProperty("--bg-image");
-    const oldMedia = document.querySelector(".bg-screen video, .bg-screen iframe");
+    const oldMedia = document.querySelector(
+      ".bg-screen video, .bg-screen iframe"
+    );
     if (oldMedia) {
       oldMedia.remove();
     }
@@ -104,7 +180,44 @@ export function useBackground() {
     }
   };
 
-  return { updateBackground, updateBackgroundVideo };
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== "https://www.youtube.com") return;
+
+      try {
+        let data = event.data;
+
+        // Tenter de parser si c'est une chaîne
+        if (typeof data === "string") {
+          data = JSON.parse(data);
+        }
+
+        // Gérer les différents formats de messages
+        if (data.event === "infoDelivery" || data.info) {
+          const info = data.info || data;
+          if (typeof info.duration === "number") {
+            setDuration(info.duration);
+          }
+          if (typeof info.currentTime === "number") {
+            setCurrentTime(info.currentTime);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse YouTube message:", e, event.data);
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  return {
+    updateBackground,
+    updateBackgroundVideo,
+    currentTime,
+    duration,
+    seekTo,
+  };
 }
 
 // Utilitaire pour extraire l'ID YouTube

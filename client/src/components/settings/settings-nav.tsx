@@ -68,7 +68,7 @@ export function SettingsNav() {
         )}
 
         {/* Menu vertical avec sous-menus intégrés sur desktop */}
-        <div className="hidden lg:flex lg:flex-col space-y-2">
+        <div className="hidden lg:flex lg:flex-col space-y-2 bg-muted/50 rounded-lg">
           {settingsSections.map((section) => (
             <div key={section.id}>
               <div
