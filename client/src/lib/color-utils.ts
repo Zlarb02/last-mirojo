@@ -275,35 +275,71 @@ export function adjustControlLuminance(
   return newL;
 }
 
-// Mise à jour de la fonction processThemeColor
-export function processThemeColor(hslString: string, isDark: boolean): { 
+// Nouvelle fonction pour traiter les couleurs muettes
+function processMutedColor(hslString: string, isDark: boolean): {
   background: string;
   foreground: string;
   hover: string;
 } {
   const [h, s, l] = hslString.split(' ').map(v => parseFloat(v));
   
-  // Ajuster la luminosité du fond en fonction du mode
-  const bgL = isDark ? 
-    Math.min(45, l) : // En mode sombre, limiter la luminosité maximale
-    Math.max(55, l);  // En mode clair, assurer une luminosité minimale
-
-  // Réduire la saturation pour les fonds en mode clair
-  const bgS = isDark ? s : Math.min(s, 85);
-
-  // Calculer la luminosité du texte pour un contraste optimal
-  const fgL = isDark ? 90 : 10;
+  // Pour le mode clair, on garde plus de saturation et on réduit moins la luminosité
+  const adjustedS = isDark ? Math.min(s, 30) : Math.min(s, 40);
   
-  // Créer une couleur de survol avec un contraste légèrement différent
+  // Ajustement de la luminosité pour le mode clair
+  const bgL = isDark ? 
+    Math.min(l, 20) : // Plus sombre en mode sombre
+    Math.min(Math.max(l, 40), 70); // Entre 85 et 92 en mode clair
+  
+  // Ajustement du texte pour garantir la lisibilité
+  const fgL = isDark ? 75 : 30;
+  
+  // Calcul de la couleur hover
   const hoverL = isDark ? 
-    Math.min(bgL + 10, 60) : // Plus clair en mode sombre
-    Math.max(bgL - 10, 45);  // Plus sombre en mode clair
+    bgL + 5 : 
+    Math.max(bgL - 5, 80);
 
   return {
-    background: `${h} ${bgS}% ${bgL}%`,
-    foreground: `${h} ${Math.min(s, 15)}% ${fgL}%`,
-    hover: `${h} ${bgS}% ${hoverL}%`
+    background: `${h} ${adjustedS}% ${bgL}%`,
+    foreground: `${h} ${adjustedS + 10}% ${fgL}%`,
+    hover: `${h} ${adjustedS}% ${hoverL}%`
   };
+}
+
+// Mise à jour de la fonction processThemeColor
+export function processThemeColor(hslString: string, isDark: boolean, type: 'primary' | 'secondary' | 'muted' = 'primary'): {
+  background: string;
+  foreground: string;
+  hover: string;
+} {
+  if (type === 'muted') {
+    return processMutedColor(hslString, isDark);
+  }
+
+  const [h, s, l] = hslString.split(' ').map(v => parseFloat(v));
+  
+  // Calculer la luminosité optimale pour le texte basé sur la couleur de fond
+  const bgL = isDark ? Math.min(l, 45) : Math.max(l, 55);
+  const textColor = getTextColor(h, s, bgL);
+  const fgL = textColor === "light" ? 95 : 10;
+
+  // Calculer une couleur hover avec un contraste approprié
+  const hoverL = isDark ? 
+    Math.min(bgL + 10, 60) : 
+    Math.max(bgL - 10, 40);
+
+  return {
+    background: `${h} ${s}% ${bgL}%`,
+    foreground: `${h} 10% ${fgL}%`,
+    hover: `${h} ${s}% ${hoverL}%`
+  };
+}
+
+// Nouvelle fonction pour ajuster dynamiquement le contraste
+export function getDynamicTextColor(bgColor: string): string {
+  const [h, s, l] = bgColor.split(' ').map(v => parseFloat(v));
+  const textColor = getTextColor(h, s, l);
+  return textColor === "light" ? "255 255 255" : "0 0 0";
 }
 
 // Ajout d'une nouvelle fonction pour calculer les couleurs des boutons

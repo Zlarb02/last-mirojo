@@ -2,12 +2,13 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Palette, Moon, Sun, Settings, Trash2 } from "lucide-react";
+import { Palette, Moon, Sun, Settings, Trash2, Box, Layers, Cloud, Diamond, Palette as PaletteIcon, Waves, Leaf } from "lucide-react";
 import { themes, type ThemeVariant } from "@/lib/themes";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
@@ -17,6 +18,17 @@ import { useLocation } from "wouter";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
 import { ColorMode, CustomColors } from '@/lib/client-types';
 import { useQueryClient } from "@tanstack/react-query";
+
+// Ajout des configurations d'icônes pour les presets
+const themeIcons = {
+  classic: Box,
+  modern: Diamond,
+  soft: Cloud,
+  sharp: Layers,
+  retro: PaletteIcon,
+  cyber: Waves,
+  nature: Leaf
+} as const;
 
 export function ThemeSwitcher() {
   const { t } = useTranslation();
@@ -51,10 +63,10 @@ export function ThemeSwitcher() {
       document.documentElement.style.setProperty('--border-width', theme.variables.borderWidth);
       document.documentElement.style.setProperty('--radius', theme.variables.radius);
       
-      // Traiter toutes les couleurs y compris muted
-      const primaryColors = processThemeColor(theme.variables.colors.primary, isDark);
-      const secondaryColors = processThemeColor(theme.variables.colors.secondary, isDark);
-      const mutedColors = processThemeColor(theme.variables.colors.muted, isDark);
+      // Traiter les couleurs avec leur type spécifique
+      const primaryColors = processThemeColor(theme.variables.colors.primary, isDark, 'primary');
+      const secondaryColors = processThemeColor(theme.variables.colors.secondary, isDark, 'secondary');
+      const mutedColors = processThemeColor(theme.variables.colors.muted, isDark, 'muted');
       
       // Appliquer les couleurs avec leurs états
       document.documentElement.style.setProperty('--primary', primaryColors.background);
@@ -186,99 +198,68 @@ export function ThemeSwitcher() {
           <span className="sr-only">{t("common.toggleTheme")}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        side="bottom"
-        alignOffset={-5}
-        avoidCollisions={true}
-      >
-        <DropdownMenuLabel>{t("theme.mode")}</DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => handleThemeChange("light")}>
-          <Sun className="h-4 w-4 mr-2" />
-          {t("theme.light")}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
-          <Moon className="h-4 w-4 mr-2" />
-          {t("theme.dark")}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>{t("theme.style")}</DropdownMenuLabel>
-        {Object.entries(themes).map(([key, config]) => (
-          <DropdownMenuItem
-            key={key}
-            onClick={() => handleVariantChange(key as ThemeVariant)}
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuGroup className="flex items-center gap-2 p-2">
+          <Button
+            variant={resolvedTheme === "light" ? "default" : "ghost"}
+            size="icon"
+            onClick={() => handleThemeChange("light")}
+            className="flex-1"
           >
-            {config.name}
-          </DropdownMenuItem>
-        ))}
+            <Sun className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={resolvedTheme === "dark" ? "default" : "ghost"}
+            size="icon"
+            onClick={() => handleThemeChange("dark")}
+            className="flex-1"
+          >
+            <Moon className="h-4 w-4" />
+          </Button>
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel>{t("theme.presets")}</DropdownMenuLabel>
+        <div className="grid grid-cols-4 gap-1 p-2">
+          {Object.entries(themes).map(([key, config]) => {
+            const Icon = themeIcons[key as keyof typeof themeIcons];
+            return (
+              <Button
+                key={key}
+                variant="ghost"
+                size="icon"
+                onClick={() => handleVariantChange(key as ThemeVariant)}
+                className="h-10 w-10"
+                title={config.name}
+              >
+                <Icon className="h-4 w-4" />
+              </Button>
+            );
+          })}
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{t("theme.colors")}</DropdownMenuLabel>
-        <DropdownMenuItem>
-          <div className="flex items-center justify-between w-full">
-            <div
-              className="flex items-center"
-              onClick={() => setCustomColor("primary")}
-            >
-              <div className="w-4 h-4 rounded mr-2 bg-primary" />
-              {t("theme.primaryColor")}
+        <div className="p-2 space-y-2">
+          {["primary", "secondary", "muted"].map((type) => (
+            <div key={type} className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                onClick={() => setCustomColor(type as keyof CustomColors)}
+                className="flex items-center gap-2 h-8 px-2 flex-1"
+              >
+                <div className={`w-4 h-4 rounded bg-${type}`} />
+                <span className="text-xs">{t(`theme.${type}Color`)}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 hover:bg-destructive/10"
+                onClick={() => resetCustomColor(type as keyof CustomColors)}
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-4 w-4 ml-2 hover:bg-destructive/10"
-              onClick={(e) => {
-                e.stopPropagation();
-                resetCustomColor("primary");
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <div className="flex items-center justify-between w-full">
-            <div
-              className="flex items-center"
-              onClick={() => setCustomColor("secondary")}
-            >
-              <div className="w-4 h-4 rounded mr-2 bg-secondary" />
-              {t("theme.secondaryColor")}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-4 w-4 ml-2 hover:bg-destructive/10"
-              onClick={(e) => {
-                e.stopPropagation();
-                resetCustomColor("secondary");
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <div className="flex items-center justify-between w-full">
-            <div
-              className="flex items-center"
-              onClick={() => setCustomColor("muted")}
-            >
-              <div className="w-4 h-4 rounded mr-2 bg-muted" />
-              {t("theme.mutedColor")}
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-4 w-4 ml-2 hover:bg-destructive/10"
-              onClick={(e) => {
-                e.stopPropagation();
-                resetCustomColor("muted");
-              }}
-            >
-              <Trash2 className="h-3 w-3" />
-            </Button>
-          </div>
-        </DropdownMenuItem>
+          ))}
+        </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setLocation("/settings#appearance")}>
           <Settings className="h-4 w-4 mr-2" />

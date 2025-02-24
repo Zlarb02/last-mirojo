@@ -1,4 +1,3 @@
-
 export type ThemeVariant = "classic" | "modern" | "soft" | "sharp" | "retro" | "cyber" | "nature";
 
 interface ThemeConfig {
@@ -36,7 +35,7 @@ export const themes: Record<ThemeVariant, ThemeConfig> = {
       colors: {
         primary: "262 83% 58%",
         secondary: "316 70% 50%",
-        muted: "262 14% 96%"
+        muted: "262 10% 96%"  // Ajuster pour modern
       }
     }
   },

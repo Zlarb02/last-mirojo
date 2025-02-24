@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { themes, type ThemeVariant } from "@/lib/themes";
 import {
   adjustSecondaryLuminance,
+  getDynamicTextColor,
   hexToHSL,
   hslToRGB,
   processThemeColor,
@@ -130,8 +131,8 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
       
       // Utiliser processThemeColor pour obtenir les couleurs optimisées
       const processedColors = processThemeColor(hslString, theme === 'dark');
-  
-      // Mise à jour immédiate du DOM pour les couleurs de fond et de texte
+      
+      // Mise à jour des couleurs de fond et de texte
       document.documentElement.style.setProperty(
         `--${type}`,
         processedColors.background
@@ -140,24 +141,24 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
         `--${type}-foreground`,
         processedColors.foreground
       );
-  
-      // Mise à jour des préférences avec les nouvelles couleurs
+
+      // Mettre à jour les variables dynamiques pour le texte
+      document.documentElement.style.setProperty(
+        `--dynamic-${type}-foreground`,
+        getDynamicTextColor(processedColors.background)
+      );
+      
+      // Mise à jour des préférences
       updatePreferences({
         customColors: {
           ...preferences?.customColors,
           [type]: processedColors.background,
         },
       });
-  
-      // Si c'est la couleur secondaire, mettre à jour les couleurs muted
-      if (type === "secondary") {
-        updateMutedColors(processedColors.background);
-      }
     } catch (error) {
       console.error(`Error updating ${type} color:`, error);
     }
   };
-  
 
   const updateMutedColors = (secondaryHSL: string) => {
     const [h, s] = secondaryHSL.split(" ").map((v) => parseFloat(v));

@@ -7,15 +7,16 @@
     --radius: 0.5rem;
     --border-width: 1px;
 
-    /* Mode clair par défaut */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
 
-    --primary: 222.2 47.4% 35%;          /* Luminosité ajustée pour contraste */
-    --primary-foreground: 222.2 47.4% 95%; /* Texte clair sur fond foncé */
+    --primary: 222.2 47.4% 35%;
+    /* Utilisation de currentColor pour une adaptation dynamique */
+    --primary-foreground: var(--dynamic-primary-foreground, 0 0% 98%);
 
-    --secondary: 217.2 32.6% 40%;        /* Luminosité ajustée pour contraste */
-    --secondary-foreground: 217.2 32.6% 95%; /* Texte clair sur fond foncé */
+    --secondary: 217.2 32.6% 40%;
+    /* Utilisation de currentColor pour une adaptation dynamique */
+    --secondary-foreground: var(--dynamic-secondary-foreground, 0 0% 98%);
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
@@ -23,19 +24,19 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
     
-    --muted: 217.2 32.6% 90%;           /* Plus clair pour le mode clair */
-    --muted-foreground: 217.2 32.6% 40%; /* Plus foncé pour lisibilité */
+    --muted: 217.2 32.6% 90%;
+    --muted-foreground: 217.2 32.6% 40%;
   }
 
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
 
-    --primary: 222.2 47.4% 35%;          /* Même couleur mais contraste adapté */
-    --primary-foreground: 222.2 47.4% 95%; /* Texte clair */
+    --primary: 222.2 47.4% 35%;
+    --primary-foreground: 222.2 47.4% 95%;
 
-    --secondary: 217.2 32.6% 40%;        /* Même couleur mais contraste adapté */
-    --secondary-foreground: 217.2 32.6% 95%; /* Texte clair */
+    --secondary: 217.2 32.6% 40%;
+    --secondary-foreground: 217.2 32.6% 95%;
 
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
@@ -43,8 +44,8 @@
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
     
-    --muted: 217.2 32.6% 20%;           /* Plus foncé pour le mode sombre */
-    --muted-foreground: 217.2 32.6% 70%; /* Plus clair pour lisibilité */
+    --muted: 217.2 32.6% 20%;
+    --muted-foreground: 217.2 32.6% 70%;
   }
 
   * {
@@ -145,7 +146,6 @@
     z-index: 1;
   }
 
-  /* Assurer que les contrôles sont toujours au-dessus */
   .bg-screen input[type="range"],
   .bg-screen button,
   .bg-screen input {
@@ -153,7 +153,6 @@
     z-index: 2;
   }
 
-  /* Amélioration du style du range input */
   input[type="range"] {
     -webkit-appearance: none;
     cursor: pointer;
