@@ -44,15 +44,19 @@ export function ThemeSwitcher() {
 
   const handleVariantChange = (variant: ThemeVariant) => {
     try {
-      // Récupérer les couleurs du thème
       const theme = themes[variant];
       const isDark = resolvedTheme === 'dark';
       
-      // Traiter les couleurs primaires et secondaires avec les nouveaux ajustements
+      // Appliquer les styles de base
+      document.documentElement.style.setProperty('--border-width', theme.variables.borderWidth);
+      document.documentElement.style.setProperty('--radius', theme.variables.radius);
+      
+      // Traiter toutes les couleurs y compris muted
       const primaryColors = processThemeColor(theme.variables.colors.primary, isDark);
       const secondaryColors = processThemeColor(theme.variables.colors.secondary, isDark);
+      const mutedColors = processThemeColor(theme.variables.colors.muted, isDark);
       
-      // Appliquer les couleurs de base
+      // Appliquer les couleurs avec leurs états
       document.documentElement.style.setProperty('--primary', primaryColors.background);
       document.documentElement.style.setProperty('--primary-foreground', primaryColors.foreground);
       document.documentElement.style.setProperty('--primary-hover', primaryColors.hover);
@@ -61,20 +65,17 @@ export function ThemeSwitcher() {
       document.documentElement.style.setProperty('--secondary-foreground', secondaryColors.foreground);
       document.documentElement.style.setProperty('--secondary-hover', secondaryColors.hover);
       
-      // Appliquer les couleurs des boutons
-      const primaryButtonColors = processButtonColors(theme.variables.colors.primary, isDark);
-      document.documentElement.style.setProperty('--btn-primary', primaryButtonColors.bg);
-      document.documentElement.style.setProperty('--btn-primary-fg', primaryButtonColors.text);
-      document.documentElement.style.setProperty('--btn-primary-hover', primaryButtonColors.hover);
-      document.documentElement.style.setProperty('--btn-primary-active', primaryButtonColors.active);
-
-      // Sauvegarder la variante
+      document.documentElement.style.setProperty('--muted', mutedColors.background);
+      document.documentElement.style.setProperty('--muted-foreground', mutedColors.foreground);
+      document.documentElement.style.setProperty('--muted-hover', mutedColors.hover);
+      
+      // Réinitialiser les couleurs personnalisées lors du changement de variante
       updatePreferences({
         themeVariant: variant,
         customColors: null
       });
     } catch (error) {
-      console.error("Erreur lors du changement de variante:", error);
+      console.error("Failed to update theme variant:", error);
     }
   };
 
@@ -136,29 +137,21 @@ export function ThemeSwitcher() {
     }
   };
 
-  const handleColorChange = (type: "primary" | "secondary", color: string) => {
+  const handleColorChange = (type: keyof CustomColors, color: string) => {
     try {
       const hsl = hexToHSL(color);
       const hslString = `${hsl.h} ${hsl.s}% ${hsl.l}%`;
       const isDark = resolvedTheme === 'dark';
       
-      // Utiliser les nouvelles fonctions de traitement des couleurs
+      // Utiliser processThemeColor pour les couleurs
       const processedColors = processThemeColor(hslString, isDark);
-      const buttonColors = processButtonColors(hslString, isDark);
       
       // Appliquer les couleurs
       document.documentElement.style.setProperty(`--${type}`, processedColors.background);
       document.documentElement.style.setProperty(`--${type}-foreground`, processedColors.foreground);
       document.documentElement.style.setProperty(`--${type}-hover`, processedColors.hover);
       
-      if (type === 'primary') {
-        document.documentElement.style.setProperty('--btn-primary', buttonColors.bg);
-        document.documentElement.style.setProperty('--btn-primary-fg', buttonColors.text);
-        document.documentElement.style.setProperty('--btn-primary-hover', buttonColors.hover);
-        document.documentElement.style.setProperty('--btn-primary-active', buttonColors.active);
-      }
-      
-      // Sauvegarder les couleurs
+      // Mettre à jour les préférences
       updatePreferences({
         customColors: {
           ...preferences?.customColors,

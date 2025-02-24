@@ -29,7 +29,7 @@ interface AppearanceSettingsProps {
 
 export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const { t } = useTranslation();
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme: theme, setTheme } = useTheme();
   const { preferences, updatePreferences, isLoading } = useThemePreferences();
   const { updateBackground } = useBackground();
   const [variant, setVariant] = useState<ThemeVariant>("classic");
@@ -89,12 +89,38 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   };
 
   const handleVariantChange = (newVariant: ThemeVariant) => {
-    // Réinitialiser les couleurs personnalisées lors du changement de variante
-    updatePreferences({
-      themeVariant: newVariant,
-      customColors: null // Réinitialiser les couleurs personnalisées
-    });
-    setVariant(newVariant);
+    try {
+      const themeConfig = themes[newVariant];
+      const isDark = theme === 'dark';
+  
+      // Appliquer le border-width et le radius
+      document.documentElement.style.setProperty("--border-width", themeConfig.variables.borderWidth);
+      document.documentElement.style.setProperty("--radius", themeConfig.variables.radius);
+  
+      // Appliquer les couleurs avec processThemeColor
+      const primaryColors = processThemeColor(themeConfig.variables.colors.primary, isDark);
+      const secondaryColors = processThemeColor(themeConfig.variables.colors.secondary, isDark);
+      const mutedColors = processThemeColor(themeConfig.variables.colors.muted, isDark);
+  
+      // Appliquer toutes les couleurs
+      document.documentElement.style.setProperty('--primary', primaryColors.background);
+      document.documentElement.style.setProperty('--primary-foreground', primaryColors.foreground);
+      
+      document.documentElement.style.setProperty('--secondary', secondaryColors.background);
+      document.documentElement.style.setProperty('--secondary-foreground', secondaryColors.foreground);
+      
+      document.documentElement.style.setProperty('--muted', mutedColors.background);
+      document.documentElement.style.setProperty('--muted-foreground', mutedColors.foreground);
+  
+      // Sauvegarder les préférences
+      updatePreferences({
+        themeVariant: newVariant,
+        customColors: null // Réinitialiser les couleurs personnalisées
+      });
+      setVariant(newVariant);
+    } catch (error) {
+      console.error("Failed to update theme variant:", error);
+    }
   };
 
   const handleColorChange = (type: "primary" | "secondary" | "muted", color: string) => {
