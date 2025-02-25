@@ -41,15 +41,6 @@ export function Header() {
             >
               <Music2 className="h-5 w-5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsPinned(!isPinned)}
-              title={t("header.pin")}
-              className={isPinned ? "text-primary" : ""}
-            >
-              <Pin className={`h-5 w-5 ${isPinned ? "rotate-45" : ""}`} />
-            </Button>
             <LanguageSwitcher />
             <ThemeSwitcher />
             <Button

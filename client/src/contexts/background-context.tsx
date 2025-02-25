@@ -52,93 +52,84 @@ export function BackgroundProvider({
     isMuted: boolean = true,
     volume: number = 0.5
   ) => {
-    const oldMedia = document.querySelector(
-      ".bg-screen video, .bg-screen iframe"
-    );
-    if (oldMedia) oldMedia.remove();
+    const container = document.querySelector(".video-background-container");
+    if (!container) return;
+
+    // Nettoyer le conteneur existant
+    container.innerHTML = "";
 
     if (!url) return;
 
     const youtubeId = getYoutubeVideoId(url);
-    const bgScreen = document.querySelector(".bg-screen");
 
-    if (youtubeId && bgScreen) {
-      if (iframeRef.current) iframeRef.current.remove();
-
+    if (youtubeId) {
       const iframe = document.createElement("iframe");
-      iframe.width = "100%";
-      iframe.height = "100%";
-      iframe.src = `https://www.youtube.com/embed/${youtubeId}?autoplay=1&controls=0&mute=${
-        isMuted ? "1" : "0"
-      }&loop=1&playlist=${youtubeId}&playsinline=1&disablekb=1&modestbranding=1&showinfo=0&rel=0&iv_load_policy=3&enablejsapi=1&origin=${
-        window.location.origin
-      }`;
-      iframe.allow =
-        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-      iframe.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        min-width: 100%;
-        min-height: 100%;
-        width: auto;
-        height: auto;
-        transform: translateX(-50%) translateY(-50%);
-        opacity: calc(1 - var(--bg-overlay-opacity, 0.85));
-        transition: opacity 200ms ease-in-out;
-        pointer-events: none;
-        z-index: 0;
-      `;
 
+      // Optimisations YouTube
+      const params = new URLSearchParams({
+        autoplay: "1",
+        controls: "0",
+        mute: isMuted ? "1" : "0",
+        loop: "1",
+        playlist: youtubeId,
+        playsinline: "1",
+        disablekb: "1",
+        modestbranding: "1",
+        showinfo: "0",
+        rel: "0",
+        iv_load_policy: "3",
+        enablejsapi: "1",
+        origin: window.location.origin,
+        widget_referrer: window.location.origin,
+        version: "3",
+        fs: "0",
+        // Ajouter des paramètres pour optimiser les performances
+        vq: "auto", // qualité vidéo automatique
+        cc_load_policy: "0", // désactiver les sous-titres
+        hl: "fr", // langue française
+      });
+
+      iframe.src = `https://www.youtube.com/embed/${youtubeId}?${params.toString()}`;
+      iframe.className = "youtube-background";
+
+      // Ajouter des attributs pour optimiser les performances
+      iframe.loading = "eager";
+      iframe.setAttribute(
+        "allow",
+        "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+      );
+
+      container.appendChild(iframe);
       iframeRef.current = iframe;
-      bgScreen.appendChild(iframe);
-
-      setTimeout(() => {
-        if (iframeRef.current) {
-          const player = iframeRef.current.contentWindow;
-          if (player) {
-            player.postMessage(
-              JSON.stringify({
-                event: "command",
-                func: "setVolume",
-                args: [Math.round(volume * 100)],
-              }),
-              "*"
-            );
-            youtubePlayerRef.current = player;
-          }
-        }
-      }, 1000);
-    } else if (bgScreen) {
-      if (videoRef.current) videoRef.current.remove();
-
+    } else {
       const video = document.createElement("video");
+
+      // Optimisations vidéo
+      video.playsInline = true;
       video.autoplay = true;
       video.loop = true;
       video.muted = isMuted;
       video.volume = volume;
-      video.src = url;
-      video.playsInline = true;
-      video.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        min-width: 100%;
-        min-height: 100%;
-        width: auto;
-        height: auto;
-        transform: translateX(-50%) translateY(-50%);
-        opacity: calc(1 - var(--bg-overlay-opacity, 0.85));
-        transition: opacity 200ms ease-in-out;
-        object-fit: cover;
-        pointer-events: none;
-        z-index: 0;
-      `;
+      video.preload = "auto";
 
-      videoRef.current?.remove();
-      bgScreen.appendChild(video);
+      // Ajouter des attributs pour optimiser les performances
+      video.setAttribute("playsinline", "true");
+      video.setAttribute("webkit-playsinline", "true");
+      video.className = "video-background";
+
+      // Utiliser requestVideoFrameCallback si disponible
+      if ("requestVideoFrameCallback" in video) {
+        (video as any).requestVideoFrameCallback(function callback() {
+          if (video.readyState >= 2) {
+            video.play().catch(console.error);
+          }
+          (video as any).requestVideoFrameCallback(callback);
+        });
+      }
+
+      video.src = url;
+      container.appendChild(video);
       videoRef.current = video;
-      video.play().catch(console.error);
     }
   };
 

@@ -4,7 +4,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { ScrollArea } from "./ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
-import { Search, Image as ImageIcon, Video, X, Loader2 } from "lucide-react";
+import {
+  Search,
+  Image as ImageIcon,
+  Video,
+  X,
+  Loader2,
+  Volume2,
+  Sun,
+  Timer,
+  VolumeX,
+  Play,
+  Pause,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
@@ -20,6 +32,10 @@ interface BackgroundPickerProps {
   opacity?: number;
   currentTime?: number;
   duration?: number;
+  isMuted?: boolean;
+  onMuteToggle?: () => void;
+  onPlayPause?: () => void;
+  isPlaying?: boolean;
 }
 
 interface YoutubeVideo {
@@ -74,6 +90,10 @@ export function BackgroundPicker({
   opacity = 0.85,
   currentTime = 0,
   duration = 0,
+  isMuted = false,
+  onMuteToggle = () => {},
+  onPlayPause = () => {},
+  isPlaying = true,
 }: BackgroundPickerProps) {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState("");
@@ -150,6 +170,16 @@ export function BackgroundPicker({
       }
     };
   }, []);
+
+  useEffect(() => {
+    // S'assurer que le slider est mis à jour quand currentTime change
+    const slider = document.querySelector(
+      'input[type="range"][value="' + currentTime + '"]'
+    );
+    if (slider) {
+      (slider as HTMLInputElement).value = currentTime.toString();
+    }
+  }, [currentTime]);
 
   const filteredBackgrounds = {
     images: PRESET_BACKGROUNDS.images.filter((item) =>
@@ -252,7 +282,7 @@ export function BackgroundPicker({
         </TabsList>
 
         <TabsContent value="image" className="mt-4">
-          <ScrollArea className="h-[300px] rounded-md border p-4">
+          <ScrollArea className="max-h-300 rounded-md border p-4">
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {imageContent}
             </div>
@@ -336,8 +366,13 @@ export function BackgroundPicker({
       {selected && (
         <div className="space-y-4">
           <div className="flex flex-col gap-2">
-            <div className="flex justify-between">
-              <Label>{t("theme.background.opacity")}</Label>
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Sun className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground sr-only">
+                  {t("theme.background.opacity")}
+                </span>
+              </div>
               <span className="text-sm text-muted-foreground">
                 {Math.round(opacity * 100)}%
               </span>
@@ -347,14 +382,31 @@ export function BackgroundPicker({
               max={100}
               step={1}
               onValueChange={(value) => onOpacityChange(value[0] / 100)}
+              className="cursor-pointer"
             />
           </div>
 
           {selected.type === "video" && (
             <>
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between">
-                  <Label>{t("theme.background.volume")}</Label>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      onClick={onMuteToggle}
+                    >
+                      {isMuted ? (
+                        <VolumeX className="h-4 w-4" />
+                      ) : (
+                        <Volume2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <span className="text-sm text-muted-foreground sr-only">
+                      {t("theme.background.volume")}
+                    </span>
+                  </div>
                   <span className="text-sm text-muted-foreground">
                     {Math.round((volume || 0) * 100)}%
                   </span>
@@ -364,12 +416,31 @@ export function BackgroundPicker({
                   max={100}
                   step={1}
                   onValueChange={(value) => onVolumeChange(value[0] / 100)}
+                  className="cursor-pointer"
+                  disabled={isMuted}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between">
-                  <Label>{t("theme.background.time")}</Label>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-4 w-4 text-muted-foreground" />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      onClick={onPlayPause}
+                    >
+                      {isPlaying ? (
+                        <Pause className="h-4 w-4" />
+                      ) : (
+                        <Play className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <span className="text-sm text-muted-foreground sr-only">
+                      {t("theme.background.time")}
+                    </span>
+                  </div>
                   <span className="text-sm text-muted-foreground">
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </span>
@@ -379,6 +450,7 @@ export function BackgroundPicker({
                   max={duration || 600} // Valeur par défaut si duration n'est pas définie
                   step={1}
                   onValueChange={(value) => onTimeChange(value[0])}
+                  className="cursor-pointer"
                 />
               </div>
             </>

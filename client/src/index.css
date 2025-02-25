@@ -20,12 +20,15 @@
 
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
-    
+
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    
+
     --muted: 217.2 32.6% 90%;
     --muted-foreground: 217.2 32.6% 40%;
+
+    /* Ajout d'une classe pour la gestion des transitions */
+    --theme-transition-duration: 200ms;
   }
 
   .dark {
@@ -40,16 +43,23 @@
 
     --card: 0 0% 3.9%;
     --card-foreground: 0 0% 98%;
-    
+
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
-    
+
     --muted: 217.2 32.6% 20%;
     --muted-foreground: 217.2 32.6% 70%;
   }
 
   * {
     @apply border-border;
+    scroll-behavior: smooth;
+  }
+
+  @media (max-width: 768px) {
+    * {
+      scroll-behavior: auto;
+    }
   }
 
   body {
@@ -92,6 +102,11 @@
     @apply bg-background;
     position: relative;
     overflow: hidden;
+    transform: translateZ(0);
+    -webkit-transform-style: preserve-3d;
+    backface-visibility: hidden;
+    perspective: 1000;
+    will-change: transform;
   }
 
   .bg-screen::before {
@@ -109,23 +124,13 @@
     opacity: calc(1 - var(--bg-overlay-opacity, 0.85));
     pointer-events: none;
     z-index: 0;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d;
+    will-change: transform, opacity;
   }
 
-  .bg-screen video {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    min-width: 100%;
-    min-height: 100%;
-    width: auto;
-    height: auto;
-    transform: translateX(-50%) translateY(-50%);
-    opacity: calc(1 - var(--bg-overlay-opacity, 0.85));
-    object-fit: cover;
-    pointer-events: none;
-    z-index: 0;
-  }
-
+  .bg-screen video,
   .bg-screen iframe {
     position: fixed;
     top: 50%;
@@ -134,11 +139,22 @@
     min-height: 100%;
     width: auto;
     height: auto;
-    transform: translateX(-50%) translateY(-50%);
+    transform: translate3d(-50%, -50%, 0) translateZ(0);
     opacity: calc(1 - var(--bg-overlay-opacity, 0.85));
+    transition: opacity 200ms ease-out;
     pointer-events: none;
     z-index: 0;
+    will-change: transform;
+    object-fit: cover;
+    -webkit-transform-style: preserve-3d;
+    backface-visibility: hidden;
+  }
+
+  .bg-screen iframe {
     border: none;
+    -webkit-transform-style: preserve-3d;
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
   }
 
   .bg-screen > * {
@@ -151,6 +167,23 @@
   .bg-screen input {
     position: relative;
     z-index: 2;
+  }
+
+  .video-background-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d;
+  }
+
+  main {
+    overflow: scroll;
   }
 
   input[type="range"] {
@@ -177,6 +210,22 @@
   }
 
   .no-transition * {
+    transition: none !important;
+  }
+
+  .theme-transition {
+    transition: background-color var(--theme-transition-duration) ease-out,
+      border-color var(--theme-transition-duration) ease-out,
+      color var(--theme-transition-duration) ease-out;
+  }
+
+  .theme-transition * {
+    transition: inherit;
+  }
+
+  /* Désactiver les transitions pendant le changement de thème */
+  .disable-transitions,
+  .disable-transitions * {
     transition: none !important;
   }
 }

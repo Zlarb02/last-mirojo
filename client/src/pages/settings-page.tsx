@@ -10,6 +10,7 @@ import { NotificationSettings } from "@/components/settings/notification-setting
 import { SubscriptionSettings } from "@/components/settings/subscription-settings";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { ChevronRight } from "lucide-react";
+import { PageLayout } from "@/components/layout/page-layout";
 
 export default function SettingsPage() {
   const { t } = useTranslation();
@@ -50,45 +51,37 @@ export default function SettingsPage() {
   };
 
   return (
-    <>
-      <SideMenu />
-      <div className="min-h-screen bg-screen flex flex-col">
-        <div className="flex-1 flex flex-col">
-          <Header />
-          <main className="flex-1">
-            <div className="p-4 sm:p-8">
-              {/* Fil d'Ariane */}
-              <div className="mb-6 flex items-center text-sm text-muted-foreground">
-                <span>{t("settings.title")}</span>
-                {currentSection && (
-                  <>
-                    <ChevronRight className="h-4 w-4 mx-1" />
-                    <span>{t(currentSection.titleKey)}</span>
-                  </>
-                )}
-                {currentSubsection && (
-                  <>
-                    <ChevronRight className="h-4 w-4 mx-1" />
-                    <span>{t(currentSubsection.titleKey)}</span>
-                  </>
-                )}
-              </div>
+    <PageLayout>
+      <div className="p-4 sm:p-8">
+        {/* Fil d'Ariane */}
+        <div className="mb-6 flex items-center text-sm text-muted-foreground">
+          <span>{t("settings.title")}</span>
+          {currentSection && (
+            <>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span>{t(currentSection.titleKey)}</span>
+            </>
+          )}
+          {currentSubsection && (
+            <>
+              <ChevronRight className="h-4 w-4 mx-1" />
+              <span>{t(currentSubsection.titleKey)}</span>
+            </>
+          )}
+        </div>
 
-              <div className="flex flex-col lg:flex-row gap-8">
-                {/* Navigation verticale (mobile et desktop) */}
-                <div className="w-full lg:w-64 flex-shrink-0">
-                  <SettingsNav />
-                </div>
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Navigation verticale (mobile et desktop) */}
+          <div className="w-full lg:w-64 flex-shrink-0">
+            <SettingsNav />
+          </div>
 
-                {/* Contenu principal */}
-                <div className="flex-1">
-                  <div className="max-w-3xl">{renderSettingsContent()}</div>
-                </div>
-              </div>
-            </div>
-          </main>
+          {/* Contenu principal */}
+          <div className="flex-1">
+            <div className="max-w-3xl">{renderSettingsContent()}</div>
+          </div>
         </div>
       </div>
-    </>
+    </PageLayout>
   );
 }

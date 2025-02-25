@@ -36,6 +36,8 @@ import { useLocation } from "wouter";
 import { useThemePreferences } from "@/hooks/use-theme-preferences";
 import { ColorMode, CustomColors } from "@/lib/client-types";
 import { useQueryClient } from "@tanstack/react-query";
+import { BackgroundPicker } from "@/components/background-picker";
+import { useBackground } from "@/hooks/use-background";
 
 // Ajout des configurations d'icônes pour les presets
 const themeIcons = {
@@ -55,18 +57,72 @@ export function ThemeSwitcher() {
   const { preferences, updatePreferences } = useThemePreferences();
   const { setTheme, resolvedTheme } = useTheme();
   const queryClient = useQueryClient();
+  const { updateBackground, currentTime, duration, seekTo } = useBackground();
+  const [bgType, setBgType] = useState<"none" | "image" | "video">("none");
+  const [bgUrl, setBgUrl] = useState("");
+  const [videoVolume, setVideoVolume] = useState(0.5);
+  const [overlayOpacity, setOverlayOpacity] = useState(0.85);
+  const [isMuted, setIsMuted] = useState(true);
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Initialiser l'état avec les préférences stockées
+  useEffect(() => {
+    if (preferences?.background) {
+      const bg = preferences.background;
+      setBgType(bg.type);
+      setBgUrl(bg.url);
+      setOverlayOpacity(Number(bg.overlay));
+      setIsMuted(bg.isMuted ?? true);
+      setVideoVolume(bg.volume ?? 0.5);
+
+      // Appliquer le background immédiatement
+      updateBackground(
+        bg.type,
+        bg.url,
+        Number(bg.overlay),
+        bg.isMuted,
+        bg.volume
+      );
+    }
+  }, [preferences]);
+
+  // Ajouter un effect pour suivre le temps de la vidéo
+  useEffect(() => {
+    setCurrentVideoTime(currentTime);
+    setVideoDuration(duration);
+  }, [currentTime, duration]);
+
+  // Ajouter un effet pour synchroniser les temps de la vidéo
+  useEffect(() => {
+    if (bgType === "video") {
+      setCurrentVideoTime(currentTime);
+      setVideoDuration(duration);
+    }
+  }, [currentTime, duration, bgType]);
+
   const handleThemeChange = async (mode: ColorMode) => {
     try {
-      // Wait for the mutation to complete before allowing a refetch
-      await updatePreferences({ themeMode: mode });
+      // Désactiver les transitions
+      document.documentElement.classList.remove("theme-transition");
+      document.documentElement.classList.add("disable-transitions");
 
-      // Update local theme only after successful mutation
+      // Mettre à jour le thème
+      await updatePreferences({ themeMode: mode });
       setTheme(mode);
+
+      // Réactiver les transitions après un court délai
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.documentElement.classList.remove("disable-transitions");
+          document.documentElement.classList.add("theme-transition");
+        });
+      });
     } catch (error) {
       console.error("Failed to update theme:", error);
     }
@@ -180,7 +236,7 @@ export function ThemeSwitcher() {
           [r, g, b]
             .map((x) => {
               const hex = x.toString(16);
-              return hex.length === 1 ? "0" + hex : hex;
+              return hex.length === 1 ? "0" + x : x;
             })
             .join("");
 
@@ -269,6 +325,112 @@ export function ThemeSwitcher() {
     }
   };
 
+  // Mettre à jour le handler pour persister les changements
+  const handleBackgroundChange = async (
+    type: "none" | "image" | "video",
+    url: string
+  ) => {
+    setBgType(type);
+    setBgUrl(url);
+
+    // Appliquer le changement visuellement
+    updateBackground(type, url, overlayOpacity, isMuted, videoVolume);
+
+    // Persister en base de données
+    await updatePreferences({
+      background: {
+        type,
+        url,
+        overlay: overlayOpacity.toString(),
+        isMuted,
+        volume: videoVolume,
+      },
+    });
+  };
+
+  // Ajouter les handlers pour le volume et l'opacité
+  const handleVolumeChange = async (volume: number) => {
+    setVideoVolume(volume);
+    updateBackground(bgType, bgUrl, overlayOpacity, isMuted, volume);
+
+    await updatePreferences({
+      background: {
+        type: bgType,
+        url: bgUrl,
+        overlay: overlayOpacity.toString(),
+        isMuted,
+        volume,
+      },
+    });
+  };
+
+  // Modifier le handler d'opacité pour ne pas recharger la vidéo
+  const handleOpacityChange = async (opacity: number) => {
+    setOverlayOpacity(opacity);
+    // Mettre à jour seulement l'opacité dans le DOM
+    document.documentElement.style.setProperty(
+      "--bg-overlay-opacity",
+      opacity.toString()
+    );
+
+    // Debounce la sauvegarde en base de données
+    const timeoutId = setTimeout(() => {
+      updatePreferences({
+        background: {
+          type: bgType,
+          url: bgUrl,
+          overlay: opacity.toString(),
+          isMuted,
+          volume: videoVolume,
+        },
+      });
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  };
+
+  // Ajouter le handler pour la timeline
+  const handleTimeChange = (time: number) => {
+    if (bgType === "video") {
+      setCurrentVideoTime(time);
+      seekTo(time);
+    }
+  };
+
+  const handleMuteToggle = async () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    updateBackground(bgType, bgUrl, overlayOpacity, newMutedState, videoVolume);
+
+    await updatePreferences({
+      background: {
+        type: bgType,
+        url: bgUrl,
+        overlay: overlayOpacity.toString(),
+        isMuted: newMutedState,
+        volume: videoVolume,
+      },
+    });
+  };
+
+  const handlePlayPause = () => {
+    const newPlayingState = !isPlaying;
+    setIsPlaying(newPlayingState);
+
+    const iframe = document.querySelector<HTMLIFrameElement>("#youtube-player");
+    if (iframe?.contentWindow) {
+      const message = {
+        event: "command",
+        func: newPlayingState ? "playVideo" : "pauseVideo",
+        args: [],
+      };
+      iframe.contentWindow.postMessage(
+        JSON.stringify(message),
+        "https://www.youtube.com"
+      );
+    }
+  };
+
   if (!mounted) return null;
 
   return (
@@ -279,7 +441,7 @@ export function ThemeSwitcher() {
           <span className="sr-only">{t("common.toggleTheme")}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuGroup className="flex items-center gap-2 p-2">
           <Button
             variant={resolvedTheme === "light" ? "default" : "ghost"}
@@ -299,6 +461,30 @@ export function ThemeSwitcher() {
           </Button>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+
+        {/* Ajout du BackgroundPicker */}
+        <div className="p-2">
+          <BackgroundPicker
+            selected={
+              bgUrl ? { type: bgType as "image" | "video", url: bgUrl } : null
+            }
+            onSelect={handleBackgroundChange}
+            onVolumeChange={handleVolumeChange}
+            onOpacityChange={handleOpacityChange}
+            onTimeChange={handleTimeChange}
+            onMuteToggle={handleMuteToggle}
+            onPlayPause={handlePlayPause}
+            isPlaying={isPlaying}
+            volume={videoVolume}
+            opacity={overlayOpacity}
+            currentTime={currentVideoTime}
+            duration={videoDuration}
+            isMuted={isMuted}
+            containerClassName="w-full"
+          />
+        </div>
+        <DropdownMenuSeparator />
+
         <DropdownMenuLabel>{t("theme.presets")}</DropdownMenuLabel>
         <div className="grid grid-cols-4 gap-1 p-2">
           {Object.entries(themes).map(([key, config]) => {
@@ -309,36 +495,35 @@ export function ThemeSwitcher() {
                 variant="ghost"
                 size="icon"
                 onClick={() => handleVariantChange(key as ThemeVariant)}
-                className="h-10 w-10"
+                className="h-10 w-10 relative"
                 title={config.name}
               >
-                <Icon className="h-4 w-4" />
+                <div
+                  className="absolute inset-0 rounded flex items-center justify-center"
+                  style={{
+                    background: `hsl(${config.variables.colors.muted})`,
+                    border: `${config.variables.borderWidth} solid hsl(${config.variables.colors.secondary})`,
+                  }}
+                >
+                  <Icon className="h-4 w-4 text-primary" />
+                </div>
               </Button>
             );
           })}
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuLabel>{t("theme.colors")}</DropdownMenuLabel>
-        <div className="p-2 space-y-2">
+        <div className="p-2 grid grid-cols-3 gap-2">
           {["primary", "secondary", "muted"].map((type) => (
-            <div key={type} className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                onClick={() => setCustomColor(type as keyof CustomColors)}
-                className="flex items-center gap-2 h-8 px-2 flex-1"
-              >
-                <div className={`w-4 h-4 rounded bg-${type}`} />
-                <span className="text-xs">{t(`theme.${type}Color`)}</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 hover:bg-destructive/10"
-                onClick={() => resetCustomColor(type as keyof CustomColors)}
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            </div>
+            <Button
+              key={type}
+              variant="ghost"
+              onClick={() => setCustomColor(type as keyof CustomColors)}
+              className="h-8 hover:bg-accent w-full"
+              title={t(`theme.${type}Color`)}
+            >
+              <div className={`w-full h-4 rounded bg-${type}`} />
+            </Button>
           ))}
         </div>
         <DropdownMenuSeparator />

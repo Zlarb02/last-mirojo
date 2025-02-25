@@ -91,8 +91,11 @@ export function useThemePreferences(): UseThemePreferencesReturn {
     if (!prefs) return;
 
     try {
-      document.documentElement.classList.add("no-transitions");
+      // Désactiver temporairement les transitions
+      const root = document.documentElement;
+      root.classList.add("disable-transitions");
 
+      // Appliquer les changements
       // Appliquer la variante du thème
       if (prefs.themeVariant && themes[prefs.themeVariant as ThemeVariant]) {
         const config = themes[prefs.themeVariant as ThemeVariant];
@@ -147,12 +150,17 @@ export function useThemePreferences(): UseThemePreferencesReturn {
           bg.volume ?? 0.5
         );
       }
+
+      // Réactiver les transitions après un court délai
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          root.classList.remove("disable-transitions");
+          // Ajouter la classe de transition une fois les changements appliqués
+          root.classList.add("theme-transition");
+        });
+      });
     } catch (error) {
       console.error("Erreur lors de l'application des préférences:", error);
-    } finally {
-      requestAnimationFrame(() => {
-        document.documentElement.classList.remove("no-transitions");
-      });
     }
   };
 

@@ -27,10 +27,29 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useBackground } from "@/hooks/use-background";
 import { useLocation } from "wouter";
+import {
+  Box,
+  Diamond,
+  Cloud,
+  Layers,
+  Palette as PaletteIcon,
+  Waves,
+  Leaf,
+} from "lucide-react";
 
 interface AppearanceSettingsProps {
   section?: "theme" | "themes" | "colors" | "border" | "background";
 }
+
+const themeIcons = {
+  classic: Box,
+  modern: Diamond,
+  soft: Cloud,
+  sharp: Layers,
+  retro: PaletteIcon,
+  cyber: Waves,
+  nature: Leaf,
+} as const;
 
 export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const { t } = useTranslation();
@@ -50,6 +69,7 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
   const [videoDuration, setVideoDuration] = useState(0);
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const [isPlaying, setIsPlaying] = useState(true);
 
   useEffect(() => {
     if (!preferences || isLoading) return;
@@ -588,6 +608,22 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
     }
   }
 
+  const handlePlayPause = () => {
+    const iframe = document.querySelector<HTMLIFrameElement>("#youtube-player");
+    if (iframe) {
+      const message = {
+        event: "command",
+        func: isPlaying ? "pauseVideo" : "playVideo",
+        args: [],
+      };
+      iframe.contentWindow?.postMessage(
+        JSON.stringify(message),
+        "https://www.youtube.com"
+      );
+      setIsPlaying(!isPlaying);
+    }
+  };
+
   // Modifier la partie du rendu pour inclure la section background
   return (
     <div className="space-y-6">
@@ -626,23 +662,36 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
-              {Object.entries(themes).map(([key, theme]) => (
-                <Button
-                  key={key}
-                  variant={variant === key ? "default" : "outline"}
-                  className="flex flex-col items-center justify-center gap-2 h-24"
-                  onClick={() => handleVariantChange(key as ThemeVariant)}
-                >
-                  <div
-                    className="w-8 h-8 rounded"
-                    style={{
-                      background: `hsl(${theme.variables.colors.primary})`,
-                      border: `${theme.variables.borderWidth} solid hsl(${theme.variables.colors.secondary})`,
-                    }}
-                  />
-                  <span>{theme.name}</span>
-                </Button>
-              ))}
+              {Object.entries(themes).map(([key, theme]) => {
+                const Icon = themeIcons[key as keyof typeof themeIcons];
+                return (
+                  <Button
+                    key={key}
+                    variant={variant === key ? "default" : "outline"}
+                    className="flex flex-col items-center justify-center gap-2 h-24"
+                    onClick={() => handleVariantChange(key as ThemeVariant)}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <div
+                        className="w-8 h-8 rounded flex items-center justify-center"
+                        style={{
+                          background: `hsl(${theme.variables.colors.muted})`,
+                          border: `${theme.variables.borderWidth} solid hsl(${theme.variables.colors.secondary})`,
+                          filter: `contrast(3)`,
+                        }}
+                      >
+                        <Icon
+                          className="h-4 w-4 text-primary"
+                          style={{
+                            color: `hsl(${theme.variables.colors.primary})`,
+                          }}
+                        />
+                      </div>
+                      <span>{theme.name}</span>
+                    </div>
+                  </Button>
+                );
+              })}
               <Button
                 variant="outline"
                 className="flex flex-col items-center justify-center gap-2 h-24"
@@ -796,6 +845,8 @@ export function AppearanceSettings({ section }: AppearanceSettingsProps) {
                   seekTo(time);
                 }
               }}
+              onPlayPause={handlePlayPause}
+              isPlaying={isPlaying}
               volume={videoVolume}
               opacity={overlayOpacity}
               currentTime={videoCurrentTime}
