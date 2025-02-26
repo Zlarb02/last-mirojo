@@ -367,30 +367,27 @@ export function BackgroundPicker({
         <div className="space-y-4">
           <div className="flex flex-col gap-2">
             <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <Sun className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-start gap-2">
+                <Sun className="h-4 w-8 text-muted-foreground" />
                 <span className="text-sm text-muted-foreground sr-only">
                   {t("theme.background.opacity")}
                 </span>
               </div>
-              <span className="text-sm text-muted-foreground">
-                {Math.round(opacity * 100)}%
-              </span>
+              <Slider
+                value={[opacity * 100]}
+                max={100}
+                step={1}
+                onValueChange={(value) => onOpacityChange(value[0] / 100)}
+                className="cursor-pointer"
+              />
             </div>
-            <Slider
-              value={[opacity * 100]}
-              max={100}
-              step={1}
-              onValueChange={(value) => onOpacityChange(value[0] / 100)}
-              className="cursor-pointer"
-            />
           </div>
 
           {selected.type === "video" && (
             <>
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-start gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -407,24 +404,20 @@ export function BackgroundPicker({
                       {t("theme.background.volume")}
                     </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    {Math.round((volume || 0) * 100)}%
-                  </span>
+                  <Slider
+                    value={[volume ? volume * 100 : 0]}
+                    max={100}
+                    step={1}
+                    onValueChange={(value) => onVolumeChange(value[0] / 100)}
+                    className="cursor-pointer"
+                    disabled={isMuted}
+                  />
                 </div>
-                <Slider
-                  value={[volume ? volume * 100 : 0]}
-                  max={100}
-                  step={1}
-                  onValueChange={(value) => onVolumeChange(value[0] / 100)}
-                  className="cursor-pointer"
-                  disabled={isMuted}
-                />
               </div>
 
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <Timer className="h-4 w-4 text-muted-foreground" />
                     <Button
                       variant="ghost"
                       size="icon"
@@ -441,17 +434,17 @@ export function BackgroundPicker({
                       {t("theme.background.time")}
                     </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <Slider
+                    value={[currentTime]}
+                    max={duration || 600} // Valeur par défaut si duration n'est pas définie
+                    step={1}
+                    onValueChange={(value) => onTimeChange(value[0])}
+                    className="cursor-pointer"
+                  />
+                  <span className="text-sm text-muted-foreground w-40 text-center">
                     {formatTime(currentTime)} / {formatTime(duration)}
                   </span>
                 </div>
-                <Slider
-                  value={[currentTime]}
-                  max={duration || 600} // Valeur par défaut si duration n'est pas définie
-                  step={1}
-                  onValueChange={(value) => onTimeChange(value[0])}
-                  className="cursor-pointer"
-                />
               </div>
             </>
           )}
